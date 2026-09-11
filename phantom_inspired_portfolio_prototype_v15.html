@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>EMFAU — Spatial Portfolio V15</title>
+<style>
+:root{
+  --bg:#000;--fg:#f4f3ef;--muted:#8f8e89;--line:rgba(255,255,255,.12);
+  --glass:rgba(13,13,13,.72);--ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--fg);font-family:Manrope,Inter,Arial,sans-serif}
+body{overscroll-behavior:none;touch-action:none;background:#000}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab}
+body.dragging canvas{cursor:grabbing}
+
+.ambient{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;opacity:.16}
+.ambient:before{content:"";position:absolute;width:72vw;height:72vw;left:14vw;top:-46vw;background:radial-gradient(circle,rgba(255,255,255,.028),rgba(255,255,255,.006) 37%,transparent 70%);filter:blur(12px)}
+.ambient:after{content:"";position:absolute;width:46vw;height:46vw;right:-22vw;bottom:-22vw;background:radial-gradient(circle,rgba(142,127,111,.028),transparent 68%);filter:blur(42px)}
+.edge{position:fixed;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse at 50% 49%,transparent 18%,rgba(0,0,0,.07) 53%,rgba(0,0,0,.64) 100%),linear-gradient(to bottom,rgba(0,0,0,.38),transparent 18%,transparent 80%,rgba(0,0,0,.54))}
+.grain{position:fixed;inset:-30%;z-index:4;pointer-events:none;opacity:.018;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.95'/%3E%3C/svg%3E")}
+@keyframes noise{0%{transform:translate(0)}25%{transform:translate(1.4%,-.7%)}50%{transform:translate(-.8%,1.1%)}75%{transform:translate(.5%,.8%)}100%{transform:translate(0)}}
+
+.chrome{position:fixed;inset:0;z-index:6;pointer-events:none;padding:max(20px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));display:flex;flex-direction:column;justify-content:space-between}
+.top{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:26px;width:100%}
+.identity{display:flex;align-items:flex-start;justify-self:start;pointer-events:none}
+.brand-lockup{display:flex;align-items:center;gap:11px;filter:drop-shadow(0 4px 16px rgba(0,0,0,.34))}
+.emfau-badge{position:relative;width:96px;height:47px;transform:rotate(-2.4deg);transform-origin:18% 50%;isolation:isolate}
+.emfau-badge:before{content:"";position:absolute;inset:0;background:#f5f4ef;clip-path:polygon(0 11%,84% 0,100% 21%,96% 88%,15% 100%,0 78%);z-index:0}
+.emfau-badge:after{content:"";position:absolute;inset:2px;background:#050505;clip-path:polygon(0 11%,84% 0,100% 21%,96% 88%,15% 100%,0 78%);z-index:1}
+.emfau-name{position:absolute;z-index:2;left:10px;top:9px;color:#f7f6f1;font-family:Arial Black,Arial,Helvetica,sans-serif;font-size:24px;font-style:italic;font-weight:900;letter-spacing:-.105em;line-height:1;text-transform:lowercase;white-space:nowrap;transform:skewX(-5deg)}
+.emfau-name .u{display:inline-block;margin-left:-1px;transform:translateY(-.4px)}
+.emfau-slash{position:absolute;z-index:3;right:8px;top:5px;width:16px;height:7px;transform:rotate(-8deg)}
+.emfau-slash:before,.emfau-slash:after{content:"";position:absolute;top:0;width:2px;height:8px;background:#f7f6f1;transform:skewX(-22deg);opacity:.92}
+.emfau-slash:before{left:3px}.emfau-slash:after{left:8px;opacity:.48}
+.emfau-index{position:absolute;z-index:3;right:8px;bottom:7px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:5.5px;letter-spacing:.1em;color:#777771;transform:rotate(2deg)}
+.brand-caption{display:flex;flex-direction:column;gap:3px;padding-top:2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-transform:uppercase;white-space:nowrap}
+.brand-caption b{font-size:6.7px;line-height:1;letter-spacing:.11em;color:#a3a29d;font-weight:750}
+.brand-caption span{font-size:5.8px;line-height:1;letter-spacing:.105em;color:#555550;font-weight:650}
+.top-center{justify-self:center;width:min(360px,31vw);padding-top:1px}
+.top-statement{position:static;transform:none;width:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;line-height:1.12;letter-spacing:.012em;font-weight:760;text-transform:uppercase;color:rgba(247,246,241,.96);pointer-events:none;text-align:left;text-wrap:balance}
+.top-statement span{color:rgba(247,246,241,.49)}
+.top-right{justify-self:end;display:flex;align-items:flex-start;gap:22px;pointer-events:auto}
+.header-meta{display:grid;grid-template-columns:auto auto;gap:2px 15px;padding-top:4px;text-align:left;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1.22;letter-spacing:.025em;text-transform:uppercase;color:#696965;white-space:nowrap}
+.header-meta b{color:#eeeeea;font-weight:760}
+.header-meta .status-dot{display:inline-block;width:5px;height:5px;margin:0 5px 1px 0;border-radius:50%;background:#d9d8d2;box-shadow:0 0 0 3px rgba(255,255,255,.04)}
+.talk-btn{border:0;border-radius:999px;background:#f7f6f1;color:#0b0b0b;min-width:112px;height:54px;padding:0 22px;font:inherit;font-size:13px;line-height:1;font-weight:650;letter-spacing:-.02em;cursor:pointer;box-shadow:0 14px 44px rgba(0,0,0,.35);transition:transform .25s var(--ease),background .25s var(--ease),box-shadow .25s var(--ease)}
+.talk-btn:hover{transform:translateY(-2px);background:#fff;box-shadow:0 18px 56px rgba(0,0,0,.48)}
+.talk-btn:active{transform:translateY(0) scale(.98)}
+
+.watermark{position:fixed;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);font-size:clamp(54px,10vw,154px);font-weight:700;letter-spacing:-.06em;line-height:.78;color:rgba(255,255,255,.008);text-transform:uppercase;pointer-events:none;white-space:nowrap;user-select:none}
+.watermark span{display:block;text-align:center}
+
+.dock{position:fixed;z-index:8;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);pointer-events:auto;display:flex;gap:2px;padding:5px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(137,137,134,.90);backdrop-filter:blur(24px) saturate(115%);-webkit-backdrop-filter:blur(24px) saturate(115%);box-shadow:0 16px 70px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.15)}
+.dock button{min-width:98px;border:0;background:transparent;color:#111;padding:14px 23px;border-radius:999px;font:inherit;font-size:13px;line-height:1;letter-spacing:-.015em;font-weight:520;text-transform:none;cursor:pointer;transition:background .26s var(--ease),color .26s var(--ease),transform .26s var(--ease)}
+.dock button:hover{background:rgba(255,255,255,.12)}.dock button.active{background:#f8f7f2;color:#0a0a0a;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+
+.filter-wrap{position:fixed;z-index:8;right:max(20px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));pointer-events:auto}
+.filter-trigger{border:0;border-radius:999px;background:rgba(178,178,174,.93);color:#111;min-width:78px;height:50px;padding:0 20px;font:inherit;font-size:13px;font-weight:520;cursor:pointer;box-shadow:0 12px 46px rgba(0,0,0,.35);transition:.24s var(--ease)}
+.filter-trigger:hover{background:#f1f0eb;transform:translateY(-1px)}
+.filter-trigger.filtered{background:#f8f7f2;color:#090909;box-shadow:0 14px 56px rgba(0,0,0,.48),0 0 0 1px rgba(255,255,255,.1)}
+.filter-trigger .filter-count{margin-left:7px;opacity:.48;font-size:.72em;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.filter-menu{position:absolute;right:0;bottom:61px;width:150px;padding:6px;border:1px solid rgba(255,255,255,.12);border-radius:20px;background:rgba(16,16,16,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 20px 70px rgba(0,0,0,.55);opacity:0;transform:translateY(8px) scale(.97);pointer-events:none;transition:.22s var(--ease)}
+.filter-wrap.open .filter-menu{opacity:1;transform:none;pointer-events:auto}
+.filter-menu button{width:100%;border:0;background:transparent;color:#8f8e89;text-align:left;padding:10px 12px;border-radius:14px;font:inherit;font-size:9px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:.18s}
+.filter-menu button:hover{background:rgba(255,255,255,.06);color:#fff}.filter-menu button.active{background:#f3f2ed;color:#111}
+.hint{position:fixed;z-index:7;right:max(22px,env(safe-area-inset-right));bottom:82px;color:#666560;font-size:7px;letter-spacing:.14em;text-transform:uppercase;display:flex;gap:9px;align-items:center;pointer-events:none}
+.hint i{width:26px;height:1px;background:linear-gradient(90deg,transparent,#64635f);display:inline-block}
+
+.center-mark{position:fixed;z-index:5;left:50%;top:50%;width:11px;height:11px;transform:translate(-50%,-50%);pointer-events:none;opacity:.42}
+.center-mark:before,.center-mark:after{content:"";position:absolute;background:#fff}.center-mark:before{width:11px;height:1px;top:5px}.center-mark:after{height:11px;width:1px;left:5px}
+
+.counter{position:fixed;z-index:6;left:max(22px,env(safe-area-inset-left));bottom:max(31px,env(safe-area-inset-bottom));transform:none;font-size:8px;letter-spacing:.2em;color:rgba(255,255,255,.38);pointer-events:none;text-transform:uppercase}
+.counter b{color:#fff;font-weight:600}
+
+.status{position:fixed;z-index:7;left:50%;top:50%;transform:translate(-50%,-50%);margin-top:35px;font-size:8px;color:rgba(255,255,255,.4);letter-spacing:.18em;text-transform:uppercase;pointer-events:none;transition:opacity .6s}.status.hidden{opacity:0}
+
+
+.section-backdrop{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.74);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);opacity:0;pointer-events:none;transition:.34s var(--ease)}
+.section-backdrop.open{opacity:1;pointer-events:auto}
+.section-sheet{position:fixed;z-index:13;left:50%;top:50%;width:min(760px,calc(100vw - 36px));min-height:360px;transform:translate(-50%,-46%) scale(.98);padding:42px 44px 38px;border:1px solid rgba(255,255,255,.13);border-radius:28px;background:rgba(8,8,8,.96);box-shadow:0 42px 150px rgba(0,0,0,.78);opacity:0;pointer-events:none;transition:.38s var(--ease);display:flex;flex-direction:column;justify-content:space-between}
+.section-sheet.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.section-kicker{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:#6e6d68;margin-bottom:22px}
+.section-sheet h3{margin:0;max-width:12ch;font-size:clamp(38px,6vw,72px);line-height:.91;letter-spacing:-.055em;font-weight:600}
+.section-sheet p{margin:26px 0 0;max-width:52ch;color:#96958f;font-size:12px;line-height:1.65}
+.section-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-top:44px;padding-top:18px;border-top:1px solid rgba(255,255,255,.09);font-size:8px;line-height:1.5;letter-spacing:.14em;text-transform:uppercase;color:#666560}
+.section-close{border:1px solid rgba(255,255,255,.15);background:transparent;color:#ddd;border-radius:999px;padding:10px 15px;font:inherit;font-size:8px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:.2s}.section-close:hover{background:#f2f1ec;color:#111}
+.backdrop{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.64);opacity:0;pointer-events:none;transition:.42s var(--ease);backdrop-filter:blur(6px)}
+.backdrop.open{opacity:1;pointer-events:auto}
+.panel{position:fixed;z-index:11;left:50%;top:50%;width:min(1060px,calc(100vw - 36px));height:min(720px,calc(100vh - 40px));transform:translate(-50%,-46%) scale(.96);opacity:0;pointer-events:none;transition:.46s var(--ease);background:#0d0d0d;border:1px solid rgba(255,255,255,.15);border-radius:26px;overflow:hidden;box-shadow:0 50px 160px rgba(0,0,0,.7);display:grid;grid-template-columns:minmax(0,1.6fr) minmax(290px,.75fr)}
+.panel.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.panel-visual{position:relative;overflow:hidden;background:#151515;min-height:300px}
+.panel-visual canvas{position:absolute;inset:0;width:100%;height:100%;cursor:default}
+.panel-visual:after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),inset 0 0 100px rgba(0,0,0,.18);pointer-events:none}
+.panel-body{padding:34px 30px 28px;display:flex;flex-direction:column;justify-content:space-between;border-left:1px solid rgba(255,255,255,.08)}
+.eyebrow{font-size:8px;color:#797974;text-transform:uppercase;letter-spacing:.19em;margin-bottom:16px}
+.panel h2{margin:0;font-size:clamp(35px,5.2vw,68px);line-height:.9;letter-spacing:-.055em;font-weight:650}
+.panel p{margin:24px 0 0;color:#9b9a95;max-width:34ch;font-size:12px;line-height:1.62}
+.panel-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:22px}.panel-tags span{font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#a6a59f;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:7px 9px}
+.panel-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.panel-actions:empty{display:none}.panel-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 14px;border-radius:999px;text-decoration:none;font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;transition:.22s var(--ease)}.panel-actions a.primary{background:#f4f3ee;color:#090909}.panel-actions a.secondary{border:1px solid rgba(255,255,255,.14);color:#c8c7c2;background:rgba(255,255,255,.025)}.panel-actions a:hover{transform:translateY(-1px);filter:brightness(1.08)}
+
+.panel-foot{display:flex;align-items:center;justify-content:space-between;margin-top:32px;border-top:1px solid rgba(255,255,255,.08);padding-top:18px;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#6f6e69}
+.close{border:1px solid rgba(255,255,255,.16);border-radius:50%;background:transparent;color:#ddd;width:38px;height:38px;cursor:pointer;font-size:17px;line-height:1;transition:.2s}.close:hover{background:#f0efe9;color:#111;transform:rotate(8deg)}
+
+@media(max-width:760px){
+  .chrome{padding:14px}.top{grid-template-columns:auto 1fr;gap:12px}.emfau-badge{width:78px;height:39px}.emfau-name{left:8px;top:8px;font-size:19.5px}.emfau-slash{right:6px;top:4px;transform:scale(.84) rotate(-8deg);transform-origin:top right}.emfau-index{right:6px;bottom:6px;font-size:4.8px}.brand-caption{display:none}.top-center{position:fixed;left:50%;top:16px;transform:translateX(-50%);width:min(44vw,210px);padding:0}.top-statement{font-size:6.8px;line-height:1.14}.top-right{grid-column:2;justify-self:end;gap:8px}.header-meta{display:none}.talk-btn{min-width:78px;height:42px;padding:0 15px;font-size:11px}.dock{bottom:max(10px,env(safe-area-inset-bottom));padding:4px}.dock button{min-width:0;padding:12px 16px;font-size:11px}.filter-wrap{right:12px;bottom:max(68px,calc(env(safe-area-inset-bottom) + 58px))}.filter-trigger{height:42px;min-width:66px;padding:0 15px;font-size:11px}.filter-menu{bottom:51px}.hint{display:none}.counter{display:none}.section-sheet{min-height:330px;padding:30px 25px 25px;width:calc(100vw - 22px)}.section-sheet p{font-size:11px}.panel{grid-template-columns:1fr;height:min(760px,calc(100vh - 22px));width:calc(100vw - 20px)}.panel-visual{height:48vh;min-height:240px}.panel-body{border-left:0;border-top:1px solid rgba(255,255,255,.08);padding:20px}.panel p{font-size:11px;margin-top:14px}.panel-tags{margin-top:14px}.panel-foot{margin-top:18px}.center-mark{display:none}
+}
+@media(prefers-reduced-motion:reduce){.grain{animation:none}.panel,.backdrop{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div class="ambient"></div><div class="edge"></div><div class="grain"></div>
+<div class="center-mark" style="display:none"></div><div class="status" id="status">Drag / Swipe to explore — Selected Work V15</div>
+<div class="counter"><b id="activeNo">01</b>&nbsp; / &nbsp;<span id="totalNo">12</span></div>
+
+<div class="chrome">
+  <header class="top">
+    <div class="identity" aria-label="emfau — creative development">
+      <div class="brand-lockup">
+        <div class="emfau-badge" aria-hidden="true">
+          <div class="emfau-name">emfa<span class="u">u</span></div>
+          <i class="emfau-slash"></i>
+          <span class="emfau-index">26</span>
+        </div>
+        <div class="brand-caption" aria-hidden="true"><b>Creative Development</b><span>Independent / Germany</span></div>
+      </div>
+    </div>
+    <div class="top-center"><div class="top-statement">EMFAU IS AN INDEPENDENT CREATIVE DEVELOPER BUILDING <span>DISTINCTIVE WEBSITES, INTERACTIVE EXPERIENCES &amp; PLAYABLE WORLDS.</span></div></div>
+    <div class="top-right">
+      <div class="header-meta">
+        <span>GERMANY, DE</span><b id="clock">--:-- CET</b>
+        <span><i class="status-dot"></i>AVAILABLE</span><b>SELECTED WORK</b>
+      </div>
+      <button class="talk-btn" id="talkBtn">Let's Talk</button>
+    </div>
+  </header>
+</div>
+
+<nav class="dock" aria-label="Primary navigation">
+  <button class="active" data-section="work">Work</button><button data-section="about">About</button><button data-section="contact">Contact</button>
+</nav>
+<div class="filter-wrap" id="filterWrap">
+  <button class="filter-trigger" id="filterTrigger" aria-expanded="false">Filter <span class="filter-count">21</span></button>
+  <div class="filter-menu" id="filterMenu">
+    <button class="active" data-filter="ALL" aria-pressed="true">All work · 21</button><button data-filter="GAME" aria-pressed="false">Games · 13</button><button data-filter="APP" aria-pressed="false">Apps · 06</button><button data-filter="WEB" aria-pressed="false">Web · 02</button>
+  </div>
+</div>
+<div class="hint"><i></i><span id="hintText">Drag anywhere</span></div>
+
+<div class="section-backdrop" id="sectionBackdrop"></div>
+<section class="section-sheet" id="sectionSheet" aria-hidden="true">
+  <div>
+    <div class="section-kicker" id="sectionKicker">About / EMFAU</div>
+    <h3 id="sectionTitle">Independent by design.</h3>
+    <p id="sectionText"></p>
+  </div>
+  <div class="section-foot"><span id="sectionFoot">Digital work / Germany / 2026</span><button class="section-close" id="sectionClose">Back to work</button></div>
+</section>
+
+<div class="backdrop" id="backdrop"></div>
+<section class="panel" id="panel" aria-hidden="true">
+  <div class="panel-visual"><canvas id="detailCanvas"></canvas></div>
+  <div class="panel-body">
+    <div>
+      <div class="eyebrow" id="panelMeta">01 / WEB / 2026</div>
+      <h2 id="panelTitle">Project</h2>
+      <p id="panelText">Interactive project presentation.</p>
+      <div class="panel-tags" id="panelTags"></div><div class="panel-actions" id="panelActions"></div>
+    </div>
+    <div class="panel-foot"><span>Selected work / 2026</span><button class="close" id="close" aria-label="Close">×</button></div>
+  </div>
+</section>
+
+<script>
+(()=>{
+'use strict';
+const canvas=document.getElementById('scene');
+const gl=canvas.getContext('webgl',{alpha:false,antialias:false,preserveDrawingBuffer:false,powerPreference:'high-performance'});
+const sourceCanvas=document.createElement('canvas'),ctx=sourceCanvas.getContext('2d',{alpha:false,desynchronized:true});
+const detailCanvas=document.getElementById('detailCanvas'),dctx=detailCanvas.getContext('2d',{alpha:false});
+const status=document.getElementById('status'),hintText=document.getElementById('hintText'),panel=document.getElementById('panel'),backdrop=document.getElementById('backdrop');
+const panelTitle=document.getElementById('panelTitle'),panelMeta=document.getElementById('panelMeta'),panelText=document.getElementById('panelText'),panelTags=document.getElementById('panelTags'),panelActions=document.getElementById('panelActions'),activeNo=document.getElementById('activeNo');
+
+const projects=[
+ {title:'HEXFRONT',type:'GAME',year:'2026',tags:['Real-time tactics','Mobile','HTML5'],kicker:'PUBLIC VERTICAL SLICE',desc:'A compact real-time tactics game built around territory control, force distribution and quick readable battles across a ten-level campaign.',art:'tide',premium:'hexfront',live:'https://emfau88.github.io/hexwars/',repo:'https://github.com/emfau88/hexwars',media:[
+   'https://raw.githubusercontent.com/emfau88/hexwars/main/docs/portal/kongregate/02-level-06-divided-field.png',
+   'https://raw.githubusercontent.com/emfau88/hexwars/main/docs/portal/kongregate/01-campaign-map.png',
+   'https://raw.githubusercontent.com/emfau88/hexwars/main/docs/portal/kongregate/03-level-09-mirror.png'
+ ]},
+ {title:'Mirror',type:'APP',year:'2026',tags:['Flutter','Android','Reflection'],kicker:'PUBLISHED ON GOOGLE PLAY',desc:'A calm relationship-clarity app for mixed signals, unclear connections and repeated overthinking, built around structured private reflection rather than social pressure.',art:'mirror',premium:'app',tileLabel:'RELATIONSHIP CLARITY / FLUTTER',live:'https://play.google.com/store/apps/details?id=com.energycrafted.mirror',media:[
+   'https://emfau88.github.io/portfolio2/assets/mirror.png'
+ ]},
+ {title:'Pocket Pier',type:'GAME',year:'2026',tags:['Cozy fishing','Phaser','Mobile'],kicker:'PLAYABLE VERTICAL SLICE',desc:'A cozy browser fishing game: cast from the harbor, steer the hook through underwater locations, collect fish and treasure, complete Harbor Jobs and upgrade the boat.',art:'pier',premium:'pocket',live:'https://emfau88.github.io/PocketPier/',repo:'https://github.com/emfau88/PocketPier',media:[
+   'https://raw.githubusercontent.com/emfau88/PocketPier/master/docs/screenshots/sunny-pier.png',
+   'https://raw.githubusercontent.com/emfau88/PocketPier/master/docs/screenshots/underwater-gameplay.png',
+   'https://raw.githubusercontent.com/emfau88/PocketPier/master/docs/screenshots/harbor-jobs.png'
+ ]},
+ {title:'ZeroHero',type:'APP',year:'2026',tags:['Flutter','Offline first','Habits'],kicker:'PUBLISHED ON GOOGLE PLAY',desc:'A privacy-first self-control and habit tracker built around fast daily check-ins, personal baselines, XP, levels, quests and long-term progress without requiring an account.',art:'system',premium:'app',tileLabel:'PRIVATE HABIT TRACKING / OFFLINE FIRST',live:'https://play.google.com/store/apps/details?id=com.energycrafted.zerohero',media:[
+   'https://emfau88.github.io/portfolio2/assets/zero2.png'
+ ]},
+ {title:'Galalaxy',type:'GAME',year:'2026',tags:['Arcade survivor','Canvas','Mobile'],kicker:'PLAYABLE / FOUR SECTORS',desc:'A mobile-first arcade space survivor built with HTML5 Canvas, escalating fleet sectors and visible weapon, engine and defensive evolution.',art:'galaxy',premium:'galalaxy',live:'https://emfau88.github.io/galalaxy/',repo:'https://github.com/emfau88/galalaxy',media:[
+   'https://raw.githubusercontent.com/emfau88/galalaxy/main/docs/screenshots/hud-boss.png',
+   'https://raw.githubusercontent.com/emfau88/galalaxy/main/docs/screenshots/start-screen.png',
+   'https://raw.githubusercontent.com/emfau88/galalaxy/main/docs/screenshots/ship-evolution.png'
+ ]},
+ {title:'between',type:'APP',year:'2026',tags:['Flutter','Reports','Rule system'],kicker:'PUBLISHED ON GOOGLE PLAY',desc:'A situation-based relationship analysis app that turns structured answers into concise reports using a deterministic rule system rather than runtime AI.',art:'editorial',premium:'app',tileLabel:'STRUCTURED REPORTS / NO RUNTIME AI',live:'https://play.google.com/store/apps/details?id=com.energycrafted.between',media:[
+   'https://emfau88.github.io/portfolio2/assets/between.png'
+ ]},
+ {title:'Rooster Rage',type:'GAME',year:'2026',tags:['Action roguelite','Phaser','Mobile'],kicker:'TEN-WAVE ACTION BUILD',desc:'A mobile-first bullet-heaven action roguelite with three battle roosters, evolving egg weapons, ten escalating waves and a multi-phase boss.',art:'rooster',premium:'roosterreal',live:'https://emfau88.github.io/RoosterRage/',repo:'https://github.com/emfau88/RoosterRage',media:[
+   'https://raw.githubusercontent.com/emfau88/RoosterRage/master/public/marketing/rooster-rage-key-art-master.png',
+   'https://raw.githubusercontent.com/emfau88/RoosterRage/master/docs/marketing/screenshots/05-run-preparation-desktop.png',
+   'https://raw.githubusercontent.com/emfau88/RoosterRage/master/docs/marketing/screenshots/06-run-preparation-mobile-portrait.png'
+ ]},
+ {title:'MewTrack',type:'APP',year:'2026',tags:['Android','Photo progress','Private'],kicker:'PUBLISHED ON GOOGLE PLAY',desc:'A private photo-progress tracker designed around reproducible front and side-profile comparisons, local progress history and a focused no-subscription workflow.',art:'architecture',premium:'app',tileLabel:'PHOTO PROGRESS / PRIVATE STORAGE',live:'https://play.google.com/store/apps/details?id=com.chargegeist.mew',media:[
+   'https://emfau88.github.io/portfolio2/assets/mewtrack.png'
+ ]},
+ {title:'Strategy Galalaxy',type:'GAME',year:'2026',tags:['Live lane wars','Space','Mobile'],kicker:'ACTIVE BUILD / LIVE MATCH',desc:'A portrait-first live lane-war experiment where two fleets fight continuously while energy, drone waves and manually deployed squads shape the front.',art:'void',premium:'strategy',live:'https://emfau88.github.io/strategy-galalaxy/',repo:'https://github.com/emfau88/strategy-galalaxy',media:[
+   'https://raw.githubusercontent.com/emfau88/strategy-galalaxy/main/assets/runtime/environment/orbital-garden-player-sector-v1.png',
+   'https://raw.githubusercontent.com/emfau88/strategy-galalaxy/main/assets/runtime/environment/orbital-garden-rival-sector-v1.png',
+   'https://raw.githubusercontent.com/emfau88/strategy-galalaxy/main/assets/runtime/structures/command-hq-garden-player-v1.png',
+   'https://raw.githubusercontent.com/emfau88/strategy-galalaxy/main/assets/runtime/structures/command-hq-garden-rival-v1.png'
+ ]},
+ {title:'ChargeGeist',type:'APP',year:'2026',tags:['Flutter','Collection','Offline'],kicker:'PUBLISHED ON GOOGLE PLAY',desc:'A calm collection game built around discovery and consistency, deliberately avoiding artificial waiting loops and high-pressure retention mechanics.',art:'deity',premium:'app',tileLabel:'COLLECT & BATTLE / LOW PRESSURE',live:'https://play.google.com/store/apps/details?id=com.energycrafted.chargegeist',media:[
+   'https://emfau88.github.io/portfolio2/assets/Chargegeist2.jpeg'
+ ]},
+ {title:'Kessel-Krawall',type:'GAME',year:'2026',tags:['Autobattler','Synergies','Mobile'],kicker:'PLAYABLE / TWO CAMPAIGNS',desc:'A compact mobile autobattler about buying and merging ingredients, arranging a five-slot cauldron and turning readable family synergies into automatic chain reactions.',art:'deity',premium:'kessel',live:'https://kessel-krawall.netlify.app/',repo:'https://github.com/emfau88/KesselKrawall',media:[
+   'https://raw.githubusercontent.com/emfau88/KesselKrawall/main/public/og.png',
+   'https://raw.githubusercontent.com/emfau88/KesselKrawall/main/docs/readme/startscreen.png',
+   'https://raw.githubusercontent.com/emfau88/KesselKrawall/main/docs/readme/hexenmarkt.png'
+ ]},
+ {title:'MarschLegenden',type:'APP',year:'2026',tags:['React Native','Outdoor','Hall of fame'],kicker:'PUBLISHED ON GOOGLE PLAY',desc:'A digital hall of fame for long-distance marches, finished events, accumulated kilometers and a persistent personal event history.',art:'tide',premium:'app',tileLabel:'EXTREME HIKING / EVENT HISTORY',live:'https://play.google.com/store/apps/details?id=com.chargegeist.marchlegends',media:[
+   'https://emfau88.github.io/portfolio2/assets/marsch2.png'
+ ]},
+ {title:'Starlattice',type:'GAME',year:'2026',tags:['Strategy','Touch-first','Space'],kicker:'CURRENT STARCONQUEST BUILD',desc:'A touch-first browser strategy game about drawing energy corridors between star systems, building fleet pressure and cutting routes for decisive surges.',art:'galaxy',premium:'starlattice',live:'https://emfau88.github.io/StarConquest/',repo:'https://github.com/emfau88/StarConquest',media:[
+   'https://raw.githubusercontent.com/emfau88/StarConquest/main/docs/screenshots/starlattice-gameplay-first-contact-desktop-2026.png',
+   'https://raw.githubusercontent.com/emfau88/StarConquest/main/docs/screenshots/starlattice-atlas-desktop-2026.png',
+   'https://raw.githubusercontent.com/emfau88/StarConquest/main/docs/screenshots/starlattice-menu-desktop-2026.png'
+ ]},
+ {title:'Core Arena',type:'GAME',year:'2026',tags:['Arena combat','Bots','Objectives'],kicker:'PLAYABLE / IN DEVELOPMENT',desc:'Fast 2D sci-fi arena combat built around movement, aim, pickups, bots, team commands and objective pressure across short browser matches.',art:'system',premium:'core',live:'https://emfau88.github.io/CTF-3.0/',repo:'https://github.com/emfau88/CTF-3.0',media:[
+   'https://raw.githubusercontent.com/emfau88/CTF-3.0/main/docs/screenshots/menu-refresh-2026-08-24-v2/custom-match-arena-desktop-de.png',
+   'https://raw.githubusercontent.com/emfau88/CTF-3.0/main/docs/screenshots/menu-refresh-2026-08-24-v2/main-menu-desktop-de.png',
+   'https://raw.githubusercontent.com/emfau88/CTF-3.0/main/docs/screenshots/menu-refresh-2026-08-24-v2/league-hq-desktop-de.png'
+ ]},
+ {title:'More Than Wombat',type:'GAME',year:'2026',tags:['2.5D brawler','Arcade','Character'],kicker:'JUNKYARD RUN / ACTIVE BUILD',desc:'A comic-styled 2.5D arcade brawler with short sessions, readable hit feedback, role-based group pressure, stage interactions and character-specific specials.',art:'signal',premium:'wombat',live:'https://emfau88.github.io/MoreThanWombat/',repo:'https://github.com/emfau88/MoreThanWombat',media:[
+   'https://raw.githubusercontent.com/emfau88/MoreThanWombat/master/public/assets/1.png',
+   'https://raw.githubusercontent.com/emfau88/MoreThanWombat/master/public/assets/2.png'
+ ]},
+ {title:'Cozy Bunker',type:'GAME',year:'2026',tags:['Management','Pixel art','Prototype'],kicker:'ARCHIVED MANAGEMENT PROTOTYPE',desc:'A calm pixel-art management prototype combining surface infrastructure, underground expansion and increasingly constrained production.',art:'architecture',premium:'single',tileLabel:'SURFACE / UNDERGROUND / PRODUCTION',repo:'https://github.com/emfau88/Bunker',media:[
+   'https://raw.githubusercontent.com/emfau88/Bunker/main/docs/screenshots/surface.png'
+ ]},
+ {title:'Terra Divina',type:'GAME',year:'2026',tags:['World sandbox','Simulation','Browser'],kicker:'WORLD SANDBOX EXPERIMENT',desc:'A divine browser sandbox about creating, guiding and destroying a living world with factions, scenarios and an emergent simulation designed to remain readable.',art:'deity',premium:'single',tileLabel:'WORLD SANDBOX / EMERGENT SIMULATION',live:'https://emfau88.github.io/Terra-Divina/',repo:'https://github.com/emfau88/Terra-Divina',media:[
+   'https://emfau88.github.io/portfolio2/assets/file_00000000aedc7246898a6ac20c782125.png'
+ ]},
+ {title:'Merge Market',type:'GAME',year:'2026',tags:['Merge puzzle','Physics','Touch-first'],kicker:'ARCHIVED MERGE EXPERIMENT',desc:'A touch-first physics merge game where market goods combine into higher tiers, supported by short sessions, orders, boosters and local progression.',art:'pier',premium:'single',tileLabel:'TOUCH PHYSICS / MERGE PUZZLE',repo:'https://github.com/emfau88/MergeMarket',media:[
+   'https://raw.githubusercontent.com/emfau88/MergeMarket/master/public/assets/generated/backgrounds/market_stall.png'
+ ]},
+ {title:'Voidline Tactic',type:'GAME',year:'2026',tags:['Tactics','Space','Prototype'],desc:'A tactical space project exploring real-time pressure, fleet decisions and a stronger home-port progression structure.',art:'void',repo:'https://github.com/emfau88/Voidline-Tactic'},
+ {title:'Portfolio3',type:'WEB',year:'2026',tags:['Portfolio','System','Web'],desc:'The current public portfolio and project archive — an evolving presentation system connecting experiments, released work and development history.',art:'editorial',premium:'portfolio',live:'https://emfau88.github.io/Portfolio3/',repo:'https://github.com/emfau88/Portfolio3',media:[
+   'https://raw.githubusercontent.com/emfau88/Portfolio3/main/emfau_logo_v6_original_pixels_bounce.gif'
+ ]},
+ {title:'Vogt Precision',type:'WEB',year:'2026',tags:['Industrial','Identity','Web'],desc:'A premium industrial website direction balancing technical credibility, restrained typography and a deliberate sense of precision.',art:'metal'}
+];
+
+document.getElementById('totalNo').textContent=String(projects.length).padStart(2,'0');
+const isTouch=matchMedia('(pointer:coarse)').matches;hintText.textContent=isTouch?'Swipe anywhere':'Drag anywhere';
+let W=0,H=0,DPR=1,camX=0,camY=0,vx=.10,vy=.035,dragging=false,moved=false,sx=0,sy=0,lastX=0,lastY=0,lastT=0,pointerX=-9999,pointerY=-9999,hover=null,filter='ALL',filteredIndices=[],filterFade=1;
+const cellFocus=new Map();
+let smoothPX=0,smoothPY=0,time=0,artCache=[],dragZoom=0,distortion=-.145,glReady=false;
+const mod=(n,m)=>((n%m)+m)%m,clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t;
+function rr(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function rand(seed){const x=Math.sin(seed*12.9898+78.233)*43758.5453;return x-Math.floor(x)}
+function makeArt(i){
+ const c=document.createElement('canvas');c.width=900;c.height=600;const g=c.getContext('2d'),p=projects[i],w=c.width,h=c.height;
+ g.fillStyle='#111';g.fillRect(0,0,w,h);
+ const R=(a,b,t)=>Math.round(a+(b-a)*t);
+ const palette=[
+  ['#111419','#80898f','#d5d1c8'],['#10100f','#6f6960','#c9c4bb'],['#070b16','#354d74','#c4d3eb'],['#161311','#806d5c','#ddd2c5'],
+  ['#090912','#4e4a79','#d8cedf'],['#11100e','#817769','#e4ded1'],['#1a100c','#8a4f28','#e7c19a'],['#10100f','#77736c','#d8d2c8'],
+  ['#080a0d','#3b4654','#aebac8'],['#0c0e0f','#56636b','#d0d8d9'],['#101212','#6d786d','#d6d7c9'],['#0b0d0d','#5e6b68','#c6d1cc']
+ ][i%12];
+ const bg=g.createLinearGradient(0,0,w,h);bg.addColorStop(0,palette[0]);bg.addColorStop(.54,palette[1]);bg.addColorStop(1,palette[2]);g.fillStyle=bg;g.fillRect(0,0,w,h);
+ // Unique artwork families
+ if(p.art==='tide'){
+   for(let k=0;k<18;k++){const yy=70+k*28+Math.sin(k*.7)*25;g.beginPath();for(let x=-40;x<w+40;x+=16){const y=yy+Math.sin(x*.013+k*.9)*30+Math.sin(x*.027-k)*9;x===-40?g.moveTo(x,y):g.lineTo(x,y)}g.strokeStyle=`rgba(244,242,233,${.05+k*.006})`;g.lineWidth=1.4;g.stroke()}
+   g.globalCompositeOperation='screen';for(let k=0;k<4;k++){const x=120+k*205,y=170+(k%2)*105,r=50+k*8;const rg=g.createRadialGradient(x,y,0,x,y,r);rg.addColorStop(0,'rgba(255,255,255,.5)');rg.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=rg;g.fillRect(x-r,y-r,r*2,r*2)}g.globalCompositeOperation='source-over';
+ } else if(p.art==='metal'){
+   for(let k=0;k<8;k++){g.save();g.translate(w*.5,h*.5);g.rotate(-.55+k*.095);const gg=g.createLinearGradient(-360,0,360,0);gg.addColorStop(0,'rgba(0,0,0,.7)');gg.addColorStop(.42,'rgba(255,255,255,.22)');gg.addColorStop(.54,'rgba(255,255,255,.72)');gg.addColorStop(.68,'rgba(0,0,0,.35)');gg.addColorStop(1,'rgba(255,255,255,.08)');g.fillStyle=gg;g.fillRect(-500,-45+k*22,1000,28);g.restore()}
+   g.fillStyle='rgba(10,10,10,.38)';g.fillRect(w*.64,0,w*.36,h);
+ } else if(p.art==='galaxy'){
+   g.fillStyle='#070a13';g.fillRect(0,0,w,h);for(let k=0;k<260;k++){const x=rand(k+i*10)*w,y=rand(k*2.7+i)*h,r=rand(k*5.1)*1.8+.15;g.fillStyle=`rgba(255,255,255,${.12+rand(k*9)*.7})`;g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill()}
+   const rg=g.createRadialGradient(w*.47,h*.49,10,w*.47,h*.49,255);rg.addColorStop(0,'rgba(222,230,255,.93)');rg.addColorStop(.12,'rgba(115,145,196,.5)');rg.addColorStop(.42,'rgba(65,79,133,.19)');rg.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=rg;g.fillRect(0,0,w,h);g.strokeStyle='rgba(226,232,255,.32)';g.lineWidth=2;g.beginPath();g.ellipse(w*.47,h*.49,260,58,-.3,0,Math.PI*2);g.stroke();
+ } else if(p.art==='mirror'){
+   g.fillStyle='#14110f';g.fillRect(0,0,w,h);for(let k=0;k<6;k++){const x=w*.5+(k-2.5)*74;g.strokeStyle=`rgba(240,231,218,${.10+k*.018})`;g.lineWidth=2;g.beginPath();g.ellipse(x,h*.49,120-k*8,220-k*16,0,0,Math.PI*2);g.stroke()}g.fillStyle='rgba(239,225,209,.83)';g.beginPath();g.arc(w*.5,h*.49,56,0,Math.PI*2);g.fill();g.fillStyle='#171310';g.beginPath();g.arc(w*.5,h*.49,37,0,Math.PI*2);g.fill();
+ } else if(p.art==='deity'){
+   g.fillStyle='#0b0911';g.fillRect(0,0,w,h);for(let k=0;k<34;k++){const a=k/34*Math.PI*2,r=65+(k%5)*28,x=w*.5+Math.cos(a)*r,y=h*.5+Math.sin(a)*r*.68;g.strokeStyle=`rgba(222,211,241,${.08+(k%4)*.03})`;g.lineWidth=8+(k%4)*2;g.beginPath();g.moveTo(w*.5,h*.5);g.quadraticCurveTo((x+w*.5)/2+Math.sin(a*3)*50,(y+h*.5)/2+Math.cos(a*2)*42,x,y);g.stroke()}const rg=g.createRadialGradient(w*.5,h*.5,0,w*.5,h*.5,100);rg.addColorStop(0,'rgba(255,244,255,.95)');rg.addColorStop(.18,'rgba(167,149,206,.55)');rg.addColorStop(1,'rgba(30,21,48,0)');g.fillStyle=rg;g.fillRect(w*.35,h*.25,w*.3,h*.5);
+ } else if(p.art==='editorial'){
+   g.fillStyle='#ddd7cb';g.fillRect(0,0,w,h);g.fillStyle='#151410';g.font='700 148px Arial';g.fillText('01',60,190);g.font='700 36px Arial';g.fillText('ATELIER',65,255);g.fillStyle='#777168';g.fillRect(500,90,280,390);g.fillStyle='#1a1916';g.fillRect(530,120,220,330);for(let k=0;k<10;k++){g.fillStyle=`rgba(255,255,255,${.03+k*.009})`;g.fillRect(530+k*22,120,1,330)}
+ } else if(p.art==='rooster'){
+   g.fillStyle='#1b110b';g.fillRect(0,0,w,h);for(let k=0;k<10;k++){g.fillStyle=k%2?'#8a4f28':'#d3a06f';g.save();g.translate(445,300);g.rotate(k*.64);g.beginPath();g.moveTo(0,-30);g.bezierCurveTo(180,-140,240,20,80,55);g.bezierCurveTo(25,80,-15,65,0,-30);g.fill();g.restore()}g.fillStyle='#f0d9bd';g.beginPath();g.arc(445,300,65,0,Math.PI*2);g.fill();g.fillStyle='#16100c';g.beginPath();g.arc(458,289,10,0,Math.PI*2);g.fill();
+ } else if(p.art==='architecture'){
+   g.fillStyle='#d8d2c6';g.fillRect(0,0,w,h);g.fillStyle='#5d5a55';g.beginPath();g.moveTo(80,520);g.lineTo(310,140);g.lineTo(520,520);g.closePath();g.fill();g.fillStyle='#929087';g.fillRect(410,105,330,415);g.fillStyle='#191a19';g.fillRect(455,145,235,375);for(let k=0;k<8;k++){g.fillStyle='rgba(255,255,255,.18)';g.fillRect(470+k*28,165,1,330)}g.fillStyle='rgba(255,255,255,.42)';g.fillRect(85,475,670,2);
+ } else if(p.art==='void'){
+   g.fillStyle='#080b0e';g.fillRect(0,0,w,h);for(let k=0;k<5;k++){const y=100+k*92;g.strokeStyle='rgba(181,198,216,.12)';g.lineWidth=1;g.beginPath();g.moveTo(40,y);g.lineTo(860,y);g.stroke()}for(let k=0;k<15;k++){const x=90+rand(k)*720,y=90+rand(k*4.2)*410;g.fillStyle=k%3===0?'#dfe7ef':'#647181';g.save();g.translate(x,y);g.rotate(rand(k*7)*Math.PI);g.fillRect(-4,-16,8,32);g.restore()}g.strokeStyle='rgba(223,232,239,.45)';g.beginPath();g.arc(450,300,95,0,Math.PI*2);g.stroke();
+ } else if(p.art==='system'){
+   g.fillStyle='#0c0f10';g.fillRect(0,0,w,h);g.strokeStyle='rgba(199,214,217,.15)';g.lineWidth=1;for(let x=55;x<w;x+=70){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}for(let y=55;y<h;y+=70){g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}const nodes=[[160,180],[350,260],[540,170],[690,340],[390,430]];g.strokeStyle='rgba(219,231,232,.34)';nodes.forEach((n,j)=>nodes.slice(j+1,j+2).forEach(m=>{g.beginPath();g.moveTo(...n);g.lineTo(...m);g.stroke()}));nodes.forEach((n,j)=>{g.fillStyle=j===2?'#e3ecec':'#77898b';g.beginPath();g.arc(...n,j===2?18:9,0,Math.PI*2);g.fill()});
+ } else if(p.art==='pier'){
+   g.fillStyle='#111515';g.fillRect(0,0,w,h);const sea=g.createLinearGradient(0,160,0,h);sea.addColorStop(0,'#566765');sea.addColorStop(1,'#202827');g.fillStyle=sea;g.fillRect(0,140,w,h-140);g.fillStyle='#c7c8b9';g.fillRect(0,0,w,140);g.fillStyle='#322e28';g.beginPath();g.moveTo(350,600);g.lineTo(430,170);g.lineTo(500,170);g.lineTo(560,600);g.fill();for(let k=0;k<13;k++){g.fillStyle='rgba(255,255,255,.08)';g.fillRect(0,190+k*26,w,2)}
+ } else {
+   g.fillStyle='#0d1110';g.fillRect(0,0,w,h);for(let k=0;k<12;k++){const x=95+k*62,amp=60+rand(k)*120;g.strokeStyle=`rgba(207,224,218,${.05+k*.012})`;g.lineWidth=2;g.beginPath();for(let y=0;y<h;y+=8){const xx=x+Math.sin(y*.025+k)*amp*.16;y===0?g.moveTo(xx,y):g.lineTo(xx,y)}g.stroke()}g.fillStyle='#e2e9e5';g.fillRect(120,118,130,4);g.fillRect(120,134,70,4);
+ }
+ // common cinematic treatment
+ const vg=g.createRadialGradient(w*.5,h*.46,70,w*.5,h*.48,w*.72);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(.72,'rgba(0,0,0,.08)');vg.addColorStop(1,'rgba(0,0,0,.48)');g.fillStyle=vg;g.fillRect(0,0,w,h);
+ g.fillStyle='rgba(255,255,255,.035)';for(let k=0;k<700;k++)g.fillRect(rand(k*3+i)*w,rand(k*5+i)*h,1,1);
+ return c;
+}
+artCache=projects.map((_,i)=>makeArt(i));
+
+const loadedMedia=new Map();
+function coverImage(g,img,x,y,w,h,alpha=1){if(!img||!img.naturalWidth)return;const ir=img.naturalWidth/img.naturalHeight,br=w/h;let dw,dh;if(ir>br){dh=h;dw=dh*ir}else{dw=w;dh=dw/ir}g.save();g.globalAlpha=alpha;g.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh);g.restore()}
+function containImage(g,img,x,y,w,h,alpha=1){if(!img||!img.naturalWidth)return;const ir=img.naturalWidth/img.naturalHeight,br=w/h;let dw,dh;if(ir>br){dw=w;dh=dw/ir}else{dh=h;dw=dh*ir}g.save();g.globalAlpha=alpha;g.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh);g.restore()}
+function frame(g,x,y,w,h,a=.13){g.strokeStyle=`rgba(255,255,255,${a})`;g.lineWidth=1;g.strokeRect(x+.5,y+.5,w-1,h-1)}
+function label(g,text,x,y,align='left'){g.save();g.font='700 11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';g.textAlign=align;g.textBaseline='top';g.fillStyle='rgba(255,255,255,.84)';g.fillText(text,x,y);g.restore()}
+function composePremiumArt(p){
+ const c=document.createElement('canvas');c.width=900;c.height=600;const g=c.getContext('2d'),imgs=(p.media||[]).map(u=>loadedMedia.get(u)).filter(Boolean);
+ g.fillStyle='#050505';g.fillRect(0,0,900,600);
+ const full=(im,a=1)=>{if(im)coverImage(g,im,0,0,900,600,a)};
+ if(p.premium==='hexfront'){
+   const a=imgs[0],b=imgs[1],d=imgs[2];
+   if(a)coverImage(g,a,0,0,650,600,1);
+   if(b)coverImage(g,b,650,0,250,292,.9);
+   if(d)coverImage(g,d,650,308,250,292,.9);
+   g.fillStyle='rgba(0,0,0,.10)';g.fillRect(630,0,20,600);
+   label(g,'REAL-TIME TACTICS / CAMPAIGN',30,554);
+ }else if(p.premium==='pocket'){
+   const harbor=imgs[0],under=imgs[1],jobs=imgs[2];
+   full(harbor,1);
+   const veil=g.createLinearGradient(0,0,900,0);veil.addColorStop(0,'rgba(0,0,0,0)');veil.addColorStop(.57,'rgba(0,0,0,.02)');veil.addColorStop(1,'rgba(0,0,0,.54)');g.fillStyle=veil;g.fillRect(0,0,900,600);
+   if(under){g.save();g.shadowColor='rgba(0,0,0,.65)';g.shadowBlur=24;coverImage(g,under,598,56,266,224,.94);g.restore();frame(g,598,56,266,224,.18)}
+   if(jobs){g.save();g.shadowColor='rgba(0,0,0,.65)';g.shadowBlur=24;coverImage(g,jobs,598,320,266,224,.9);g.restore();frame(g,598,320,266,224,.18)}
+   label(g,'COZY FISHING / HARBOR TO DEEP WATER',30,554);
+ }else if(p.premium==='galalaxy'){
+   const boss=imgs[0],start=imgs[1],evo=imgs[2];
+   g.fillStyle='#03060c';g.fillRect(0,0,900,600);
+   if(boss){g.save();g.filter='blur(24px) saturate(.75) brightness(.42)';coverImage(g,boss,-20,-20,940,640,.8);g.restore()}
+   g.fillStyle='rgba(2,4,9,.68)';g.fillRect(0,0,900,600);
+   const cards=[[start,42,80,236,456,.78],[boss,300,30,300,540,1],[evo,622,80,236,456,.78]];
+   cards.forEach(([im,x,y,w,h,a])=>{if(!im)return;g.save();g.shadowColor='rgba(0,0,0,.82)';g.shadowBlur=34;g.shadowOffsetY=12;containImage(g,im,x,y,w,h,a);g.restore();frame(g,x,y,w,h,a*.17)});
+   label(g,'MOBILE-FIRST / SPACE SURVIVOR',32,554);
+ }else if(p.premium==='roosterreal'){
+   const key=imgs[0],desktop=imgs[1],mobile=imgs[2];
+   full(key,1);
+   const fade=g.createLinearGradient(0,0,900,0);fade.addColorStop(0,'rgba(0,0,0,0)');fade.addColorStop(.58,'rgba(0,0,0,.06)');fade.addColorStop(1,'rgba(0,0,0,.60)');g.fillStyle=fade;g.fillRect(0,0,900,600);
+   if(desktop){g.save();g.shadowColor='rgba(0,0,0,.8)';g.shadowBlur=26;coverImage(g,desktop,594,55,270,235,.94);g.restore();frame(g,594,55,270,235,.18)}
+   if(mobile){g.save();g.shadowColor='rgba(0,0,0,.8)';g.shadowBlur=26;containImage(g,mobile,642,320,174,222,.96);g.restore();frame(g,642,320,174,222,.18)}
+   label(g,'BULLET HEAVEN / THREE ROOSTERS',30,554);
+ }else if(p.premium==='strategy'){
+   const player=imgs[0],rival=imgs[1],hqP=imgs[2],hqR=imgs[3];
+   if(player)coverImage(g,player,0,0,450,600,.98); if(rival)coverImage(g,rival,450,0,450,600,.98);
+   const seam=g.createLinearGradient(340,0,560,0);seam.addColorStop(0,'rgba(0,0,0,0)');seam.addColorStop(.5,'rgba(0,0,0,.48)');seam.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=seam;g.fillRect(320,0,260,600);
+   g.strokeStyle='rgba(255,255,255,.17)';g.setLineDash([5,9]);g.beginPath();g.moveTo(450,42);g.lineTo(450,558);g.stroke();g.setLineDash([]);
+   if(hqP)containImage(g,hqP,54,294,270,270,.98); if(hqR)containImage(g,hqR,576,38,270,270,.98);
+   g.fillStyle='rgba(0,0,0,.22)';g.fillRect(0,0,900,600);label(g,'LIVE LANE WAR / ORBITAL GARDEN',30,554);
+ }else if(p.premium==='kessel'){
+   const og=imgs[0],start=imgs[1],shop=imgs[2];
+   full(og,1);
+   g.fillStyle='rgba(18,9,27,.14)';g.fillRect(0,0,900,600);
+   if(start){g.save();g.shadowColor='rgba(0,0,0,.8)';g.shadowBlur=28;coverImage(g,start,34,344,272,198,.92);g.restore();frame(g,34,344,272,198,.18)}
+   if(shop){g.save();g.shadowColor='rgba(0,0,0,.8)';g.shadowBlur=28;coverImage(g,shop,594,344,272,198,.92);g.restore();frame(g,594,344,272,198,.18)}
+   label(g,'MOBILE AUTOBATTLER / CAULDRON BUILDS',30,554);
+ }else if(p.premium==='starlattice'){
+   const play=imgs[0],atlas=imgs[1],menu=imgs[2];
+   full(play,1);
+   const fade=g.createLinearGradient(0,0,900,600);fade.addColorStop(0,'rgba(0,0,0,.02)');fade.addColorStop(.65,'rgba(0,0,0,.04)');fade.addColorStop(1,'rgba(0,0,0,.55)');g.fillStyle=fade;g.fillRect(0,0,900,600);
+   if(atlas){g.save();g.shadowColor='rgba(0,0,0,.72)';g.shadowBlur=26;coverImage(g,atlas,604,46,260,224,.9);g.restore();frame(g,604,46,260,224,.17)}
+   if(menu){g.save();g.shadowColor='rgba(0,0,0,.72)';g.shadowBlur=26;coverImage(g,menu,604,304,260,224,.88);g.restore();frame(g,604,304,260,224,.17)}
+   label(g,'TOUCH-FIRST / ENERGY CORRIDORS',30,554);
+ }else if(p.premium==='wombat'){
+   const a=imgs[0],b=imgs[1];
+   if(a)coverImage(g,a,0,0,594,600,1); if(b)coverImage(g,b,608,0,292,600,.96);
+   g.fillStyle='rgba(0,0,0,.08)';g.fillRect(590,0,18,600);label(g,'2.5D ARCADE BRAWLER / JUNKYARD RUN',30,554);
+ }else if(p.premium==='app'){
+   const im=imgs[0];
+   if(im){
+     g.save();g.filter='blur(32px) saturate(.88) brightness(.48)';coverImage(g,im,-55,-55,1010,710,.92);g.restore();
+     const haze=g.createLinearGradient(0,0,900,600);haze.addColorStop(0,'rgba(5,5,6,.50)');haze.addColorStop(.48,'rgba(5,5,6,.18)');haze.addColorStop(1,'rgba(5,5,6,.58)');g.fillStyle=haze;g.fillRect(0,0,900,600);
+     g.save();g.shadowColor='rgba(0,0,0,.92)';g.shadowBlur=42;g.shadowOffsetY=18;containImage(g,im,165,26,570,526,1);g.restore();
+     g.strokeStyle='rgba(255,255,255,.16)';g.strokeRect(164.5,25.5,571,527);
+   }else{
+     const bg=g.createLinearGradient(0,0,900,600);bg.addColorStop(0,'#171719');bg.addColorStop(1,'#080809');g.fillStyle=bg;g.fillRect(0,0,900,600);
+   }
+   label(g,p.tileLabel||'ANDROID APP / PUBLISHED',30,554);
+ }else if(p.premium==='core'){
+   const arena=imgs[0],menu=imgs[1],league=imgs[2];
+   if(arena)coverImage(g,arena,0,0,650,600,1);
+   if(menu)coverImage(g,menu,664,0,236,286,.93);
+   if(league)coverImage(g,league,664,314,236,286,.93);
+   g.fillStyle='rgba(0,0,0,.13)';g.fillRect(638,0,26,600);
+   label(g,'ARENA COMBAT / BOTS / OBJECTIVES',30,554);
+ }else if(p.premium==='single'){
+   const im=imgs[0];
+   if(im)full(im,1);
+   const wash=g.createLinearGradient(0,0,0,600);wash.addColorStop(0,'rgba(0,0,0,.02)');wash.addColorStop(.70,'rgba(0,0,0,.05)');wash.addColorStop(1,'rgba(0,0,0,.52)');g.fillStyle=wash;g.fillRect(0,0,900,600);
+   label(g,p.tileLabel||'ARCHIVE / EXPERIMENT',30,554);
+ }else if(p.premium==='portfolio'){
+   const logo=imgs[0];
+   const bg=g.createLinearGradient(0,0,900,600);bg.addColorStop(0,'#111214');bg.addColorStop(1,'#050506');g.fillStyle=bg;g.fillRect(0,0,900,600);
+   g.strokeStyle='rgba(255,255,255,.10)';for(let x=40;x<900;x+=110){g.beginPath();g.moveTo(x,0);g.lineTo(x,600);g.stroke()}for(let y=55;y<600;y+=95){g.beginPath();g.moveTo(0,y);g.lineTo(900,y);g.stroke()}
+   if(logo){g.save();g.shadowColor='rgba(255,255,255,.12)';g.shadowBlur=42;containImage(g,logo,180,100,540,330,1);g.restore()}
+   g.fillStyle='rgba(0,0,0,.30)';g.fillRect(0,0,900,600);label(g,'PORTFOLIO / PROJECT ARCHIVE / SYSTEM',30,554);
+ }
+ const vg=g.createRadialGradient(450,280,120,450,305,610);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(.74,'rgba(0,0,0,.015)');vg.addColorStop(1,'rgba(0,0,0,.40)');g.fillStyle=vg;g.fillRect(0,0,900,600);
+ return c;
+}
+function rebuildPremium(index){const p=projects[index];if(!p.premium)return;artCache[index]=composePremiumArt(p);if(panel.classList.contains('open')&&panelTitle.textContent===p.title)drawDetail(index)}
+projects.forEach((p,i)=>{if(!p.media)return;p.media.forEach(url=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{loadedMedia.set(url,img);rebuildPremium(i)};img.onerror=()=>{};img.src=url})});
+
+function compile(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s}
+function initGL(){
+ if(!gl)return false;
+ const vs=compile(gl.VERTEX_SHADER,`attribute vec2 aPosition;varying vec2 vUv;void main(){vUv=aPosition*.5+.5;gl_Position=vec4(aPosition,0.,1.);}`);
+ const fs=compile(gl.FRAGMENT_SHADER,`precision highp float;varying vec2 vUv;uniform sampler2D uTex;uniform float uDistort;uniform float uZoom;uniform float uVignette;void main(){
+   vec2 p=2.0*(vUv-.5);
+   /* Phantom's published shader uses a sub-1 base scale plus a radial term.
+      For the concave / recessed-wall direction visible on the live site,
+      the radial coefficient must decrease the sample scale toward the edges. */
+   vec2 metric=p*vec2(.78,1.0);
+   float r2=dot(metric,metric);
+   vec2 radial=vec2(uDistort,uDistort*.86);
+   vec2 warped=p*(vec2(.885)+radial*r2);
+   /* Camera pulls back very slightly during drag. */
+   warped*=mix(1.0,1.020,uZoom-1.0);
+   vec2 uv=warped*.5+.5;
+   /* With the inward sampling above the texture stays inside its valid range;
+      a microscopic guard only protects extreme aspect ratios. */
+   uv=clamp(uv,vec2(.0015),vec2(.9985));
+   vec3 col=texture2D(uTex,uv).rgb;
+   float d=length(p*vec2(.78,1.0));
+   float vig=1.0-smoothstep(.70,1.40,d)*uVignette;
+   col*=vig;
+   gl_FragColor=vec4(col,1.0);
+ }`);
+ const program=gl.createProgram();gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(program));gl.useProgram(program);
+ const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);const loc=gl.getAttribLocation(program,'aPosition');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+ const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+ window.__gridGL={program,tex,uTex:gl.getUniformLocation(program,'uTex'),uDistort:gl.getUniformLocation(program,'uDistort'),uZoom:gl.getUniformLocation(program,'uZoom'),uVignette:gl.getUniformLocation(program,'uVignette')};gl.uniform1i(window.__gridGL.uTex,0);return true;
+}
+try{glReady=initGL()}catch(e){console.warn('WebGL distortion disabled',e);glReady=false}
+
+function resize(){DPR=Math.min(devicePixelRatio||1,1.55);W=innerWidth;H=innerHeight;canvas.width=Math.max(1,Math.round(W*DPR));canvas.height=Math.max(1,Math.round(H*DPR));sourceCanvas.width=canvas.width;sourceCanvas.height=canvas.height;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);if(glReady)gl.viewport(0,0,canvas.width,canvas.height)}
+addEventListener('resize',resize,{passive:true});resize();
+
+function computeVisibleIndices(kind=filter){const a=[];for(let i=0;i<projects.length;i++)if(kind==='ALL'||projects[i].type===kind)a.push(i);return a.length?a:[0]}
+filteredIndices=computeVisibleIndices('ALL');
+function visibleIndices(){return filteredIndices}
+function screenToSource(px,py){
+ if(px<0||py<0)return{x:-9999,y:-9999};
+ let u=px/Math.max(W,1),v=1-py/Math.max(H,1),x=2*(u-.5),y=2*(v-.5);
+ const mx=x*.78,my=y,r2=mx*mx+my*my;
+ const dragScale=1+dragZoom*.010;
+ x*=((.885+distortion*r2)*dragScale);
+ y*=((.885+distortion*.86*r2)*dragScale);
+ const su=x*.5+.5,sv=y*.5+.5;return{x:su*W,y:(1-sv)*H};
+}
+function gridMetrics(){
+ /* Calibrated from the supplied Phantom viewport: around six columns and
+    three rows remain visible after the radial magnification. */
+ const cellW=clamp(W*.154,192,272);
+ const cellH=clamp(H*.305,220,292);
+ return{cellW,cellH,stepX:cellW,stepY:cellH};
+}
+function mediaRect(index,x,y,w,h){
+ /* V13: project art is now the dominant surface, not a small object floating
+    inside a large empty cell. Text gets a compact top/bottom rail. */
+ const modes=[
+  [.93,.735,.035,.135],[.94,.755,.030,.120],[.92,.770,.040,.112],[.95,.745,.025,.128],
+  [.93,.765,.035,.115],[.945,.750,.0275,.124],[.925,.775,.0375,.108],[.95,.760,.025,.116],
+  [.93,.745,.035,.128],[.94,.760,.030,.116],[.92,.755,.040,.120],[.94,.740,.030,.132]
+ ];
+ const m=modes[index%modes.length];return{x:x+w*m[2],y:y+h*m[3],w:w*m[0],h:h*m[1]};
+}
+function drawCard(c,index,x,y,w,h,focus){
+ c.save();c.beginPath();c.rect(x,y,w,h);c.clip();const art=artCache[index];const zoom=1.001+focus*.011,iw=w*zoom,ih=h*zoom;const ambientX=(smoothPX-W*.5)*.0015,ambientY=(smoothPY-H*.5)*.0013;
+ c.filter=`brightness(${1+focus*.34}) contrast(${1+focus*.075}) saturate(${1+focus*.055})`;
+ if(focus>.01){c.shadowColor=`rgba(255,255,255,${.14*focus})`;c.shadowBlur=18+16*focus;}
+ c.globalAlpha=.985+focus*.015;c.drawImage(art,x+(w-iw)/2+ambientX,y+(h-ih)/2+ambientY,iw,ih);c.filter='none';c.shadowBlur=0;c.globalAlpha=1;
+ const shade=c.createLinearGradient(0,y,0,y+h);shade.addColorStop(0,'rgba(0,0,0,.015)');shade.addColorStop(.72,'rgba(0,0,0,0)');shade.addColorStop(1,`rgba(0,0,0,${.23-.10*focus})`);c.fillStyle=shade;c.fillRect(x,y,w,h);
+ if(focus>.01){const glow=c.createRadialGradient(x+w*.5,y+h*.42,0,x+w*.5,y+h*.42,Math.max(w,h)*.7);glow.addColorStop(0,`rgba(255,255,255,${.085*focus})`);glow.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=glow;c.fillRect(x,y,w,h)}
+ c.restore();
+}
+function renderWebGL(){
+ if(!glReady)return;
+ const G=window.__gridGL;gl.useProgram(G.program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,G.tex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,sourceCanvas);gl.uniform1f(G.uDistort,distortion);gl.uniform1f(G.uZoom,1+dragZoom*.010);gl.uniform1f(G.uVignette,.34);gl.drawArrays(gl.TRIANGLES,0,6);
+}
+
+function draw(t){
+ time=t;dragZoom=lerp(dragZoom,dragging?1:0,dragging?.11:.065);smoothPX=lerp(smoothPX,pointerX===-9999?W*.5:pointerX,.06);smoothPY=lerp(smoothPY,pointerY===-9999?H*.5:pointerY,.06);
+ ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);hover=null;
+ const m=gridMetrics(),arr=visibleIndices(),ambientCamX=(smoothPX/W-.5)*W*.0045,ambientCamY=(smoothPY/H-.5)*H*.0045;
+ const effectiveCamX=camX+ambientCamX,effectiveCamY=camY+ambientCamY;
+ const baseCol=Math.floor(effectiveCamX/m.stepX),baseRow=Math.floor(effectiveCamY/m.stepY),cols=Math.ceil(W/m.stepX)+3,rows=Math.ceil(H/m.stepY)+3;
+ const sp=screenToSource(pointerX,pointerY);let nearest={dist:1e9,index:arr[0]};
+
+ // One strict orthogonal grid. The whole plane is warped later by the shader.
+ ctx.save();ctx.strokeStyle='rgba(255,255,255,.082)';ctx.lineWidth=.68;
+ for(let cc=-cols;cc<=cols;cc++){
+   const col=baseCol+cc,wx=col*m.stepX,cx=W*.5+(wx-effectiveCamX)-m.cellW*.5;
+   ctx.beginPath();ctx.moveTo(cx,-m.cellH*2);ctx.lineTo(cx,H+m.cellH*2);ctx.stroke();
+ }
+ for(let rr0=-rows;rr0<=rows;rr0++){
+   const row=baseRow+rr0,wy=row*m.stepY,cy=H*.5+(wy-effectiveCamY)-m.cellH*.5;
+   ctx.beginPath();ctx.moveTo(-m.cellW*2,cy);ctx.lineTo(W+m.cellW*2,cy);ctx.stroke();
+ }
+ ctx.restore();
+
+ filterFade=lerp(filterFade,1,.14);ctx.save();ctx.globalAlpha=.22+.78*filterFade;
+ for(let rr0=-rows;rr0<=rows;rr0++)for(let cc=-cols;cc<=cols;cc++){
+   const col=baseCol+cc,row=baseRow+rr0,wx=col*m.stepX,wy=row*m.stepY;
+   const cx=W*.5+(wx-effectiveCamX),cy=H*.5+(wy-effectiveCamY),cellX=cx-m.cellW*.5,cellY=cy-m.cellH*.5;
+   if(cellX>W+m.cellW||cellX+m.cellW<-m.cellW||cellY>H+m.cellH||cellY+m.cellH<-m.cellH)continue;
+   const hash=mod(col*5+row*7,arr.length),index=arr[hash],pr=projects[index],media=mediaRect(index,cellX,cellY,m.cellW,m.cellH);
+   const dist=Math.hypot((cx-W*.5)/Math.max(W,1),(cy-H*.5)/Math.max(H,1));if(dist<nearest.dist)nearest={dist,index};
+   const inside=!dragging&&sp.x>=cellX&&sp.x<=cellX+m.cellW&&sp.y>=cellY&&sp.y<=cellY+m.cellH;
+   const focusKey=`${col}:${row}`;let focus=cellFocus.get(focusKey)||0;focus=lerp(focus,inside?1:0,inside?.22:.105);if(focus>.002)cellFocus.set(focusKey,focus);else cellFocus.delete(focusKey);if(inside)hover={index,x:cellX,y:cellY,w:m.cellW,h:m.cellH};
+
+   // Phantom-like local illumination: the cell itself lifts out of a nearly black plane.
+   if(focus>.002){ctx.save();ctx.beginPath();ctx.rect(cellX,cellY,m.cellW,m.cellH);ctx.clip();
+     ctx.fillStyle=`rgba(255,255,255,${.025+.075*focus})`;ctx.fillRect(cellX,cellY,m.cellW,m.cellH);
+     const tileGlow=ctx.createRadialGradient(sp.x,sp.y,0,sp.x,sp.y,Math.max(m.cellW,m.cellH)*.82);tileGlow.addColorStop(0,`rgba(255,255,255,${.13*focus})`);tileGlow.addColorStop(.48,`rgba(255,255,255,${.055*focus})`);tileGlow.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=tileGlow;ctx.fillRect(cellX,cellY,m.cellW,m.cellH);ctx.restore();}
+
+   // tiny cell metadata, then the actual visual inset inside the grid cell
+   ctx.textBaseline='top';ctx.textAlign='left';ctx.font=`650 ${clamp(m.cellW*.026,7.2,8.4)}px Manrope,Arial`;ctx.fillStyle=`rgba(255,255,255,${.56+.40*focus})`;ctx.fillText(pr.title.toUpperCase(),cellX+13,cellY+13);
+   ctx.textAlign='right';ctx.fillStyle=`rgba(255,255,255,${.31+.30*focus})`;ctx.font=`600 ${clamp(m.cellW*.0205,6.5,7.4)}px Manrope,Arial`;ctx.fillText(String(pr.year),cellX+m.cellW-12,cellY+14);ctx.textAlign='left';
+
+   ctx.save();drawCard(ctx,index,media.x,media.y,media.w,media.h,focus);ctx.restore();
+   ctx.strokeStyle=`rgba(255,255,255,${.05+.30*focus})`;ctx.lineWidth=.65+.22*focus;ctx.strokeRect(media.x+.325,media.y+.325,Math.max(0,media.w-.65),Math.max(0,media.h-.65));
+
+   const tags=(pr.tags||[]).slice(0,3);let tx=cellX+13,ty=cellY+m.cellH-25;ctx.font=`600 ${clamp(m.cellW*.019,6.2,7.1)}px Manrope,Arial`;ctx.fillStyle=`rgba(255,255,255,${.31+.27*focus})`;for(const tag of tags){ctx.fillText(tag.toUpperCase(),tx,ty);tx+=ctx.measureText(tag.toUpperCase()).width+14}
+   ctx.textAlign='right';ctx.fillStyle=`rgba(255,255,255,${.24+.28*focus})`;ctx.fillText(String(index+1).padStart(2,'0'),cellX+m.cellW-13,ty);ctx.textAlign='left';
+   if(pr.premium){ctx.fillStyle=`rgba(255,255,255,${.34+.34*focus})`;ctx.font='700 6.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';ctx.fillText('●  REAL PROJECT',cellX+13,cellY+m.cellH-43);if(focus>.08){ctx.textAlign='right';ctx.fillStyle=`rgba(255,255,255,${.78*focus})`;ctx.font='700 7px Manrope,Arial';ctx.fillText('OPEN ↗',cellX+m.cellW-13,cellY+m.cellH-43);ctx.textAlign='left'}}else if(focus>.08){ctx.fillStyle=`rgba(255,255,255,${.76*focus})`;ctx.font='650 7px Manrope,Arial';ctx.fillText('OPEN ↗',cellX+13,cellY+m.cellH-43)}
+ }
+ ctx.restore();const localNo=Math.max(0,arr.indexOf(nearest.index))+1;activeNo.textContent=String(localNo).padStart(2,'0');document.getElementById('totalNo').textContent=String(arr.length).padStart(2,'0');renderWebGL();
+ if(!dragging){camX+=vx;camY+=vy;vx*=.91;vy*=.91;if(Math.abs(vx)<.004)vx=0;if(Math.abs(vy)<.004)vy=0}
+ requestAnimationFrame(draw);
+}
+
+function pointFromEvent(e){return e.touches?e.touches[0]:e.changedTouches?e.changedTouches[0]:e}
+function down(e){if(panel.classList.contains('open'))return;const p=pointFromEvent(e);pointerX=p.clientX;pointerY=p.clientY;dragging=true;moved=false;document.body.classList.add('dragging');sx=lastX=p.clientX;sy=lastY=p.clientY;lastT=performance.now();vx=vy=0;status.classList.add('hidden');e.preventDefault?.()}
+function move(e){const p=pointFromEvent(e);pointerX=p.clientX;pointerY=p.clientY;if(!dragging)return;const now=performance.now(),dt=Math.max(8,now-lastT),dx=p.clientX-lastX,dy=p.clientY-lastY;if(Math.hypot(p.clientX-sx,p.clientY-sy)>5)moved=true;camX-=dx;camY-=dy;vx=lerp(vx,(-dx)*(16/dt),.78);vy=lerp(vy,(-dy)*(16/dt),.78);lastX=p.clientX;lastY=p.clientY;lastT=now;e.preventDefault?.()}
+function up(e){if(!dragging)return;const p=pointFromEvent(e);if(p){pointerX=p.clientX;pointerY=p.clientY}dragging=false;document.body.classList.remove('dragging');if(!moved&&hover)openProject(hover.index)}
+canvas.addEventListener('mousedown',down);addEventListener('mousemove',move);addEventListener('mouseup',up);canvas.addEventListener('touchstart',down,{passive:false});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',up,{passive:true});canvas.addEventListener('mouseleave',()=>{if(!dragging){pointerX=-9999;pointerY=-9999}});
+canvas.addEventListener('wheel',e=>{if(panel.classList.contains('open'))return;status.classList.add('hidden');const dx=Math.abs(e.deltaX)>2?e.deltaX:e.shiftKey?e.deltaY:0,dy=e.shiftKey?0:e.deltaY;camX+=dx*.58;camY+=dy*.58;vx=lerp(vx,dx*.032,.7);vy=lerp(vy,dy*.032,.7);e.preventDefault()},{passive:false});
+
+function openProject(index){const p=projects[index];panelTitle.textContent=p.title;panelMeta.textContent=p.kicker?`${String(index+1).padStart(2,'0')} / ${p.kicker}`:`${String(index+1).padStart(2,'0')} / ${p.type} / ${p.year}`;panelText.textContent=p.desc;panelTags.innerHTML=p.tags.map(x=>`<span>${x}</span>`).join('');panelActions.innerHTML=(p.live?`<a class="primary" href="${p.live}" target="_blank" rel="noopener">Live project ↗</a>`:'')+(p.repo?`<a class="secondary" href="${p.repo}" target="_blank" rel="noopener">GitHub ↗</a>`:'');panel.classList.add('open');backdrop.classList.add('open');panel.setAttribute('aria-hidden','false');requestAnimationFrame(()=>drawDetail(index))}
+function drawDetail(index){const box=detailCanvas.parentElement.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,1.7);detailCanvas.width=Math.max(1,Math.round(box.width*dpr));detailCanvas.height=Math.max(1,Math.round(box.height*dpr));dctx.setTransform(dpr,0,0,dpr,0,0);dctx.fillStyle='#111';dctx.fillRect(0,0,box.width,box.height);const img=artCache[index],ir=img.width/img.height,br=box.width/box.height;let dw,dh;if(ir>br){dh=box.height;dw=dh*ir}else{dw=box.width;dh=dw/ir}dctx.drawImage(img,(box.width-dw)/2,(box.height-dh)/2,dw,dh);const g=dctx.createLinearGradient(0,0,box.width,box.height);g.addColorStop(0,'rgba(255,255,255,.018)');g.addColorStop(1,'rgba(0,0,0,.22)');dctx.fillStyle=g;dctx.fillRect(0,0,box.width,box.height)}
+function closeProject(){panel.classList.remove('open');backdrop.classList.remove('open');panel.setAttribute('aria-hidden','true')}
+document.getElementById('close').addEventListener('click',closeProject);backdrop.addEventListener('click',closeProject);addEventListener('keydown',e=>{if(e.key==='Escape')closeProject()});addEventListener('resize',()=>{if(panel.classList.contains('open'))drawDetail(Number(panelMeta.textContent.slice(0,2))-1)});
+
+const filterWrap=document.getElementById('filterWrap'),filterTrigger=document.getElementById('filterTrigger');
+const filterLabels={ALL:'All work',GAME:'Games',APP:'Apps',WEB:'Web'};
+function setFilter(kind){
+  if(!['ALL','GAME','APP','WEB'].includes(kind))kind='ALL';
+  filter=kind;filteredIndices=computeVisibleIndices(kind);filterFade=0;hover=null;cellFocus.clear();vx*=.12;vy*=.12;
+  document.querySelectorAll('.filter-menu button').forEach(b=>{const active=b.dataset.filter===kind;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false')});
+  filterTrigger.classList.toggle('filtered',kind!=='ALL');
+  filterTrigger.innerHTML=`${kind==='ALL'?'Filter':filterLabels[kind]} <span class="filter-count">${String(filteredIndices.length).padStart(2,'0')}</span>`;
+  filterWrap.classList.remove('open');filterTrigger.setAttribute('aria-expanded','false');
+  activeNo.textContent='01';document.getElementById('totalNo').textContent=String(filteredIndices.length).padStart(2,'0');
+  status.textContent=`Showing ${filteredIndices.length} ${kind==='ALL'?'projects':filterLabels[kind].toLowerCase()}`;status.classList.remove('hidden');clearTimeout(window.__filterStatusTimer);window.__filterStatusTimer=setTimeout(()=>status.classList.add('hidden'),1150);
+}
+filterTrigger.addEventListener('click',e=>{e.stopPropagation();const open=!filterWrap.classList.contains('open');filterWrap.classList.toggle('open',open);filterTrigger.setAttribute('aria-expanded',open?'true':'false')});
+document.querySelectorAll('.filter-menu button').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();setFilter(btn.dataset.filter)}));
+
+document.addEventListener('click',e=>{if(!filterWrap.contains(e.target)){filterWrap.classList.remove('open');filterTrigger.setAttribute('aria-expanded','false')}});
+
+const sectionBackdrop=document.getElementById('sectionBackdrop'),sectionSheet=document.getElementById('sectionSheet'),sectionClose=document.getElementById('sectionClose'),sectionKicker=document.getElementById('sectionKicker'),sectionTitle=document.getElementById('sectionTitle'),sectionText=document.getElementById('sectionText'),sectionFoot=document.getElementById('sectionFoot');
+const sectionCopy={
+ about:{kicker:'About / EMFAU',title:'Independent by design.',text:'I build focused digital work across websites, interactive experiences and browser games — combining product thinking, visual systems and hands-on development in one process.',foot:'Creative development / Germany / 2026'},
+ contact:{kicker:'Contact / New work',title:'Build something worth noticing.',text:'Available for selected website, interface and interactive projects. Final contact details and inquiry links can be connected here before release.',foot:'Selected commissions / collaborations / 2026'}
+};
+function closeSection(){sectionSheet.classList.remove('open');sectionBackdrop.classList.remove('open');sectionSheet.setAttribute('aria-hidden','true');document.querySelectorAll('.dock button').forEach(b=>b.classList.toggle('active',b.dataset.section==='work'))}
+function openSection(key){const c=sectionCopy[key];if(!c)return;sectionKicker.textContent=c.kicker;sectionTitle.textContent=c.title;sectionText.textContent=c.text;sectionFoot.textContent=c.foot;sectionBackdrop.classList.add('open');sectionSheet.classList.add('open');sectionSheet.setAttribute('aria-hidden','false')}
+document.querySelectorAll('.dock button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.dock button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const key=btn.dataset.section;if(key==='work'){sectionSheet.classList.remove('open');sectionBackdrop.classList.remove('open');sectionSheet.setAttribute('aria-hidden','true')}else openSection(key)}));
+sectionClose.addEventListener('click',closeSection);sectionBackdrop.addEventListener('click',closeSection);
+document.getElementById('talkBtn').addEventListener('click',()=>{document.querySelectorAll('.dock button').forEach(b=>b.classList.toggle('active',b.dataset.section==='contact'));openSection('contact')});
+function tickClock(){const t=new Intl.DateTimeFormat('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());document.getElementById('clock').textContent=t+' CET'}setInterval(tickClock,1000);tickClock();setTimeout(()=>status.classList.add('hidden'),2600);requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
