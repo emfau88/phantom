@@ -1,0 +1,46 @@
+# Performance evidence
+
+## Environment and method
+
+- Measured 2026-09-12 on Windows 10/11 host reporting Win64.
+- Microsoft Edge 153 headless, viewport 1440 x 900, device scale factor 1.
+- 180 `requestAnimationFrame` intervals after network idle and 1.8 seconds of
+  settling, once idle and once during drag/release inertia.
+- Reproduce with `npm run dev` and then `npm run qa:performance`.
+
+The headless browser is not synchronized to a physical display, so its frame
+intervals are a regression diagnostic, not a claim of 60 Hz device performance.
+Real desktop and phone testing is still required before launch-quality performance
+can be certified.
+
+## Result
+
+| State | Average interval | p95 interval | Samples |
+| --- | ---: | ---: | ---: |
+| Idle | 2.78 ms | 2.90 ms | 180 |
+| Drag and inertia | 3.31 ms | 5.60 ms | 180 |
+
+Runtime debug state reported a fixed 99-tile mesh pool and 21 active project
+identities. Device DPR and measured drawing-buffer ratio were both 1 in this run;
+the R3F canvas caps DPR to the range 1–1.55.
+
+## Resource model
+
+- 21 shared project textures at 768 x 900 RGBA, approximately 55.4 MiB base level
+  or about 73.8 MiB including a full mip chain.
+- One shared plane geometry and 99 small shader materials; tiles recycle rather
+  than accumulating during movement.
+- Four remote images load concurrently at most. The shell and procedural covers
+  do not wait for the archive. Each real cover causes one texture repaint/upload.
+- The scene renders once through `RenderPass -> ShaderPass -> OutputPass`.
+- No repeated fullscreen Canvas2D `texImage2D` upload exists.
+- Per-frame state remains in the imperative controller; React is updated only
+  when hover identity, active index or application state changes.
+- Geometry, materials, textures and composer targets are disposed during teardown.
+
+## Remaining optimization opportunities
+
+The production JavaScript is 1,208.75 kB raw / 339.21 kB gzip. A later pass can
+lazy-load the case-study/GSAP branch and investigate Three.js chunking. Localizing
+licensed, optimized media would also reduce origin latency and make dimensions
+predictable. Neither issue prevented the current validation suite from passing.
