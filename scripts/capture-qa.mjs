@@ -20,9 +20,20 @@ for (const [width, height] of viewports) {
   await page.close();
 }
 
-const casePage = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
-await casePage.goto('http://127.0.0.1:4173/#project/hexfront', { waitUntil: 'networkidle' });
-await casePage.getByTestId('hexfront-case-study').waitFor();
-await casePage.screenshot({ path: new URL('hexfront-1440x900.png', output).pathname.slice(1), fullPage: false });
-await casePage.close();
+const caseCaptures = [
+  ['hexfront', 1440, 900],
+  ['pocket-pier', 1440, 900],
+  ['mirror', 390, 844],
+  ['core-arena', 1440, 900],
+  ['voidline-farhaven', 1440, 900],
+  ['portfolio3', 1440, 900],
+];
+for (const [id, width, height] of caseCaptures) {
+  const casePage = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
+  await casePage.goto(`http://127.0.0.1:4173/#project/${id}`, { waitUntil: 'networkidle' });
+  await casePage.getByTestId(`case-study-${id}`).waitFor();
+  await casePage.waitForTimeout(500);
+  await casePage.screenshot({ path: new URL(`${id}-${width}x${height}.png`, output).pathname.slice(1), fullPage: false });
+  await casePage.close();
+}
 await browser.close();

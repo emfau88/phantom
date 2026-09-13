@@ -6,8 +6,9 @@ import { SectionSheet } from './components/SectionSheet';
 import { ProjectBrowser } from './components/ProjectBrowser';
 import { ProjectDetail } from './components/ProjectDetail';
 import { FallbackGrid } from './components/FallbackGrid';
-import { HexfrontCaseStudy } from './components/HexfrontCaseStudy';
+import { PremiumCaseStudy } from './components/PremiumCaseStudy';
 import { CaseMorph } from './components/CaseMorph';
+import { hasCaseStudy } from './data/caseStudies';
 import { GridScene } from './scene/GridScene';
 import { canUseWebGL } from './scene/grid/webglSupport';
 import type { TileSelection } from './scene/grid/GridController';
@@ -38,7 +39,10 @@ export function App() {
   const [section, setSection] = useState<Section>('work');
   const [projectBrowserOpen, setProjectBrowserOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(() => projectFromLocation());
-  const [casePhase, setCasePhase] = useState<CasePhase | null>(() => projectFromLocation()?.caseStudyId ? 'opening' : null);
+  const [casePhase, setCasePhase] = useState<CasePhase | null>(() => {
+    const project = projectFromLocation();
+    return project && hasCaseStudy(project.id) ? 'opening' : null;
+  });
   const [origin, setOrigin] = useState<ScreenRect>(defaultOrigin);
   const [activeIndex, setActiveIndex] = useState(0);
   const [hoverProject, setHoverProject] = useState<Project | null>(null);
@@ -69,7 +73,7 @@ export function App() {
     setProjectBrowserOpen(false);
     setOrigin(selectionOrigin);
     setSelectedProject(project);
-    setCasePhase(project.caseStudyId ? 'opening' : null);
+    setCasePhase(hasCaseStudy(project.id) ? 'opening' : null);
     if (push) updateLocation(project);
   }, [updateLocation]);
 
@@ -85,7 +89,7 @@ export function App() {
   }, [restoreFocus]);
 
   const closeProject = useCallback(() => {
-    if (selectedProject?.caseStudyId && casePhase !== 'closing') {
+    if (selectedProject && hasCaseStudy(selectedProject.id) && casePhase !== 'closing') {
       setCasePhase('closing');
       return;
     }
@@ -100,7 +104,7 @@ export function App() {
       const project = projectFromLocation();
       setSelectedProject(project);
       setOrigin(defaultOrigin());
-      setCasePhase(project?.caseStudyId ? 'opening' : null);
+      setCasePhase(project && hasCaseStudy(project.id) ? 'opening' : null);
       if (!project) restoreFocus();
     };
     window.addEventListener('popstate', onPopState);
@@ -158,11 +162,11 @@ export function App() {
 
       {section !== 'work' && !selectedProject && <SectionSheet section={section} onClose={() => { setSection('work'); restoreFocus(); }} />}
       {projectBrowserOpen && !selectedProject && <ProjectBrowser filter={filter} onClose={() => { setProjectBrowserOpen(false); restoreFocus(); }} onFilterChange={changeFilter} onSelect={(project) => selectProject(project)} />}
-      {selectedProject && !selectedProject.caseStudyId && <ProjectDetail project={selectedProject} onClose={closeProject} />}
+      {selectedProject && !hasCaseStudy(selectedProject.id) && <ProjectDetail project={selectedProject} onClose={closeProject} />}
 
-      {selectedProject?.caseStudyId && casePhase === 'opening' && <CaseMorph origin={origin} opening reducedMotion={reducedMotion} onComplete={finishOpen} />}
-      {selectedProject?.caseStudyId && casePhase === 'open' && <HexfrontCaseStudy onClose={closeProject} />}
-      {selectedProject?.caseStudyId && casePhase === 'closing' && <><HexfrontCaseStudy onClose={ignoreClose} /><CaseMorph origin={origin} opening={false} reducedMotion={reducedMotion} onComplete={finishClose} /></>}
+      {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'opening' && <CaseMorph origin={origin} image={selectedProject.media[0]} opening reducedMotion={reducedMotion} onComplete={finishOpen} />}
+      {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'open' && <PremiumCaseStudy project={selectedProject} onClose={closeProject} />}
+      {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'closing' && <><PremiumCaseStudy project={selectedProject} onClose={ignoreClose} /><CaseMorph origin={origin} image={selectedProject.media[0]} opening={false} reducedMotion={reducedMotion} onComplete={finishClose} /></>}
     </div>
   );
 }

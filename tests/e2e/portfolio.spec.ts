@@ -34,10 +34,10 @@ test('opens HEXFRONT, supports Escape and browser history', async ({ page }) => 
   await expect.poll(() => page.evaluate(() => Boolean(window.__EMFAU_GRID__))).toBe(true);
   const box = await canvas.boundingBox();
   await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-  await expect(page.getByTestId('hexfront-case-study')).toBeVisible({ timeout: 4000 });
+  await expect(page.getByTestId('case-study-hexfront')).toBeVisible({ timeout: 4000 });
   await expect(page).toHaveURL(/#project\/hexfront/);
   await page.keyboard.press('Escape');
-  await expect(page.getByTestId('hexfront-case-study')).toHaveCount(0, { timeout: 4000 });
+  await expect(page.getByTestId('case-study-hexfront')).toHaveCount(0, { timeout: 4000 });
   await expect(page).not.toHaveURL(/#project/);
 });
 
@@ -83,7 +83,40 @@ test('About, Contact and accessible project browser are keyboard reachable', asy
   await page.getByRole('button', { name: 'Browse projects' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: 'Selected work' })).toBeVisible();
-  await expect(page.getByRole('listitem')).toHaveCount(21);
+  await expect(page.getByRole('listitem')).toHaveCount(20);
+});
+
+test('every project has a working premium direct-link case study', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'The full catalogue route sweep runs once on desktop.');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const projects = [
+    ['hexfront', 'HEXFRONT'], ['mirror', 'Mirror'], ['pocket-pier', 'Pocket Pier'], ['zerohero', 'ZeroHero'],
+    ['galalaxy', 'Galalaxy'], ['between', 'between'], ['rooster-rage', 'Rooster Rage'], ['mewtrack', 'MewTrack'],
+    ['strategy-galalaxy', 'Strategy Galalaxy'], ['chargegeist', 'ChargeGeist'], ['kessel-krawall', 'Kessel-Krawall'],
+    ['marschlegenden', 'MarschLegenden'], ['starlattice', 'Starlattice'], ['core-arena', 'Core Arena'],
+    ['more-than-wombat', 'More Than Wombat'], ['cozy-bunker', 'Cozy Bunker'], ['terra-divina', 'Terra Divina'],
+    ['merge-market', 'Merge Market'], ['voidline-farhaven', 'Voidline: Farhaven'], ['portfolio3', 'Portfolio3'],
+  ];
+  for (const [id, title] of projects) {
+    await page.goto(`/#project/${id}`, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId(`case-study-${id}`)).toBeVisible({ timeout: 4000 });
+    await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
+  }
+});
+
+test('premium case studies expose complete editorial content and navigation', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/#project/pocket-pier');
+  const caseStudy = page.getByTestId('case-study-pocket-pier');
+  await expect(caseStudy).toBeVisible();
+  await expect(caseStudy.locator('.case-fact')).toHaveCount(5);
+  await expect(caseStudy.locator('.case-pillars > article')).toHaveCount(3);
+  await expect(caseStudy.locator('.case-media')).toBeVisible();
+  await caseStudy.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  await expect(caseStudy.getByRole('button', { name: 'Back to grid' })).toBeVisible();
+  await caseStudy.getByRole('button', { name: 'Back to grid' }).click();
+  await expect(caseStudy).toHaveCount(0);
+  await expect(page).not.toHaveURL(/#project/);
 });
 
 test('functional DOM fallback retains filters and project access', async ({ page }) => {

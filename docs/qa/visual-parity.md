@@ -3,8 +3,10 @@
 ## Compared evidence
 
 V16 and production captures were reviewed side by side at 1440 x 900,
-1920 x 1080, 390 x 844 and 844 x 390. The production HEXFRONT route was also
-captured at 1440 x 900. Files are stored in `v16-baseline/` and `production/`.
+1920 x 1080, 390 x 844 and 844 x 390. Six representative premium routes were
+also captured across desktop and mobile: HEXFRONT, Pocket Pier, Mirror, Core
+Arena, Voidline: Farhaven and Portfolio3. Files are stored in `v16-baseline/`
+and `production/`.
 
 ## Matched
 
@@ -14,7 +16,8 @@ captured at 1440 x 900. Files are stored in `v16-baseline/` and `production/`.
 - Recessed/concave edge direction using V16's calibrated distortion values.
 - Desktop, portrait-phone and landscape-phone compositions remain usable without
   horizontal document overflow.
-- HEXFRONT opens into a full, scrollable editorial case study with its real media.
+- Every verified project opens into its own full, scrollable editorial case study
+  with factual copy, relevant actions and available real media.
 
 ## Deliberately improved
 

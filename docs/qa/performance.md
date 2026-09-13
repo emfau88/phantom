@@ -20,14 +20,14 @@ can be certified.
 | Idle | 2.78 ms | 2.90 ms | 180 |
 | Drag and inertia | 3.31 ms | 5.60 ms | 180 |
 
-Runtime debug state reported a fixed 99-tile mesh pool and 21 active project
+Runtime debug state reported a fixed 99-tile mesh pool and 20 active project
 identities. Device DPR and measured drawing-buffer ratio were both 1 in this run;
 the R3F canvas caps DPR to the range 1–1.55.
 
 ## Resource model
 
-- 21 shared project textures at 768 x 900 RGBA, approximately 55.4 MiB base level
-  or about 73.8 MiB including a full mip chain.
+- 20 shared project textures at 768 x 900 RGBA, approximately 52.7 MiB base level
+  or about 70.3 MiB including a full mip chain.
 - One shared plane geometry and 99 small shader materials; tiles recycle rather
   than accumulating during movement.
 - Four remote images load concurrently at most. The shell and procedural covers
@@ -40,7 +40,7 @@ the R3F canvas caps DPR to the range 1–1.55.
 
 ## Remaining optimization opportunities
 
-The production JavaScript is 1,208.75 kB raw / 339.21 kB gzip. A later pass can
+The production JavaScript is 1,246.66 kB raw / 353.85 kB gzip. A later pass can
 lazy-load the case-study/GSAP branch and investigate Three.js chunking. Localizing
 licensed, optimized media would also reduce origin latency and make dimensions
 predictable. Neither issue prevented the current validation suite from passing.

@@ -11,8 +11,7 @@
 
 ## Project inventory
 
-The complete V16 dataset was transferred to `src/data/projects.ts` without
-inventing missing links or content.
+The table below preserves the complete historical V16 dataset for auditability.
 
 | # | Project | Category | Media source |
 | ---: | --- | --- | --- |
@@ -43,6 +42,15 @@ GitHub raw files, EMFAU GitHub Pages media, project/live links and Google Play
 links. Exact URLs and provenance treatment are recorded in the typed data and
 `docs/asset-manifest.md`.
 
+### Production correction
+
+The repository owner subsequently confirmed that **Vogt Precision does not
+exist**, so it was removed instead of being presented as real work. The current
+production dataset therefore contains 20 verified projects: 13 GAME, 6 APP and
+1 WEB. `Voidline Tactic` was also reconciled with its current source repository
+and is now presented under its current title, **Voidline: Farhaven**. These are
+intentional truthfulness corrections, not accidental parity gaps.
+
 ## Rendering architecture
 
 V16 paints the complete virtual grid into a hidden Canvas2D. Every animation
@@ -55,7 +63,7 @@ V16 already contains two important calibrated coordinate transforms:
 
 - `screenToSource` maps distorted pointer positions back into the flat grid.
 - `sourceToScreen` iteratively maps source-space points to displayed positions
-  and is used by `warpedRect` for the HEXFRONT transition.
+  and is used by `warpedRect` for project transitions.
 
 These concepts must survive the migration because ordinary R3F raycasting does
 not account for a fullscreen postprocess distortion.
@@ -77,9 +85,8 @@ not account for a fullscreen postprocess distortion.
 
 - Work, About and Contact navigation.
 - Filter menu: All work, Games, Apps, Web.
-- Generic project-detail panel.
-- Dedicated full-page HEXFRONT case study.
-- HEXFRONT WebGL-tile-to-DOM-image morph with a reverse close transition.
+- Individual full-page premium case studies for every verified project.
+- Shared WebGL-tile-to-DOM-image morph with a reverse close transition.
 - Escape closes a case study or generic project panel.
 - Reduced motion disables major CSS transitions but does not yet reduce all
   continuous grid motion.
@@ -87,13 +94,12 @@ not account for a fullscreen postprocess distortion.
 ## Content and media
 
 The project array contains the authoritative titles, descriptions, tags, URLs
-and media. Most cover images point to public EMFAU GitHub repositories or the
-existing EMFAU portfolio host. Voidline Tactic and Vogt Precision currently use
-procedural fallback art because no media URL is defined.
+and media. Most cover images point to public EMFAU GitHub repositories, Google
+Play or the existing EMFAU portfolio host. The production refactor adds verified
+source media for Voidline: Farhaven and removes the nonexistent Vogt Precision.
 
-HEXFRONT contains factual case-study copy, facts, campaign atlas, two gameplay
-images, a design statement and live/repository links. Other projects use the
-generic detail presentation.
+All 20 projects now have factual, project-specific case-study copy, facts,
+design pillars, media treatment and appropriate live/store/repository actions.
 
 ## Responsive behavior
 
