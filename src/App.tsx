@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import gsap from 'gsap';
 import type { Project, ProjectFilter } from './data/projects';
 import { projectById } from './data/projects';
 import { Chrome, type Section } from './components/Chrome';
@@ -16,7 +17,7 @@ import type { ScreenRect } from './scene/grid/distortion';
 import type { GridMotionController } from './scene/grid/motionState';
 import { useReducedMotion } from './hooks/useReducedMotion';
 
-type CasePhase = 'opening' | 'open' | 'closing';
+type CasePhase = 'opening' | 'open' | 'preparing-close' | 'closing';
 
 const defaultOrigin = (): ScreenRect => ({
   left: window.innerWidth * 0.42,
@@ -49,6 +50,10 @@ export function App() {
   const [hoverProject, setHoverProject] = useState<Project | null>(null);
   const focusBeforeOverlay = useRef<HTMLElement | null>(null);
   const gridMotionController = useRef<GridMotionController | null>(null);
+  const closeScrollTween = useRef<gsap.core.Tween | null>(null);
+  const closeShouldNavigateBack = useRef(true);
+  const selectedProjectRef = useRef(selectedProject);
+  const casePhaseRef = useRef(casePhase);
 
   const overlayOpen = Boolean(selectedProject || section !== 'work' || projectBrowserOpen);
   const statusText = useMemo(() => {
@@ -57,6 +62,11 @@ export function App() {
     if (hoverProject) return `${hoverProject.title} — open project`;
     return matchMedia('(pointer: coarse)').matches ? 'Swipe anywhere' : 'Drag anywhere';
   }, [hoverProject, rendererReady, webglAvailable]);
+
+  useEffect(() => {
+    selectedProjectRef.current = selectedProject;
+    casePhaseRef.current = casePhase;
+  }, [casePhase, selectedProject]);
 
   const restoreFocus = useCallback(() => {
     window.setTimeout(() => focusBeforeOverlay.current?.focus(), 0);
@@ -70,6 +80,10 @@ export function App() {
 
   const selectProject = useCallback((project: Project, selectionOrigin = defaultOrigin(), push = true) => {
     focusBeforeOverlay.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (hasCaseStudy(project.id)) {
+      gridMotionController.current?.prepareTransition();
+      gridMotionController.current?.setTransitionProgress(0);
+    }
     setSection('work');
     setFilterOpen(false);
     setProjectBrowserOpen(false);
@@ -84,34 +98,72 @@ export function App() {
   }, [selectProject]);
 
   const finishClose = useCallback(() => {
+    closeScrollTween.current?.kill();
+    closeScrollTween.current = null;
+    gridMotionController.current?.resumeAfterTransition();
     setCasePhase(null);
     setSelectedProject(null);
-    if (projectFromLocation()) window.history.back();
+    if (closeShouldNavigateBack.current && projectFromLocation()) window.history.back();
     restoreFocus();
   }, [restoreFocus]);
 
+  const beginCaseClose = useCallback((navigateBack: boolean) => {
+    if (!selectedProject || !hasCaseStudy(selectedProject.id) || casePhase !== 'open') return;
+    closeShouldNavigateBack.current = navigateBack;
+    gridMotionController.current?.prepareTransition();
+    gridMotionController.current?.setTransitionProgress(1);
+    const caseStudy = document.querySelector<HTMLElement>('.case-study');
+    if (!reducedMotion && caseStudy && caseStudy.scrollTop > 4) {
+      setCasePhase('preparing-close');
+      closeScrollTween.current?.kill();
+      closeScrollTween.current = gsap.to(caseStudy, {
+        scrollTop: 0,
+        duration: Math.min(0.55, Math.max(0.3, caseStudy.scrollTop / 5000)),
+        ease: 'power3.inOut',
+        onComplete: () => {
+          closeScrollTween.current = null;
+          setCasePhase('closing');
+        },
+      });
+      return;
+    }
+    setCasePhase('closing');
+  }, [casePhase, reducedMotion, selectedProject]);
+
   const closeProject = useCallback(() => {
-    if (selectedProject && hasCaseStudy(selectedProject.id) && casePhase !== 'closing') {
-      setCasePhase('closing');
+    if (selectedProject && hasCaseStudy(selectedProject.id)) {
+      beginCaseClose(true);
       return;
     }
     setSelectedProject(null);
     setCasePhase(null);
     if (projectFromLocation()) window.history.back();
     restoreFocus();
-  }, [casePhase, restoreFocus, selectedProject]);
+  }, [beginCaseClose, restoreFocus, selectedProject]);
 
   useEffect(() => {
     const onPopState = () => {
       const project = projectFromLocation();
-      setSelectedProject(project);
-      setOrigin(defaultOrigin());
-      setCasePhase(project && hasCaseStudy(project.id) ? 'opening' : null);
-      if (!project) restoreFocus();
+      if (!project && selectedProjectRef.current && hasCaseStudy(selectedProjectRef.current.id)) {
+        beginCaseClose(false);
+        return;
+      }
+      if (project) {
+        selectProject(project, defaultOrigin(), false);
+        return;
+      }
+      gridMotionController.current?.resumeAfterTransition();
+      setSelectedProject(null);
+      setCasePhase(null);
+      restoreFocus();
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, [restoreFocus]);
+  }, [beginCaseClose, restoreFocus, selectProject]);
+
+  useEffect(() => () => {
+    closeScrollTween.current?.kill();
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -144,8 +196,19 @@ export function App() {
   }, []);
   const handleMotionController = useCallback((controller: GridMotionController | null) => {
     gridMotionController.current = controller;
+    const currentProject = selectedProjectRef.current;
+    if (controller && currentProject && hasCaseStudy(currentProject.id)) {
+      controller.prepareTransition();
+      controller.setTransitionProgress(casePhaseRef.current === 'opening' ? 0 : 1);
+    }
   }, []);
-  const finishOpen = useCallback(() => setCasePhase('open'), []);
+  const handleMorphProgress = useCallback((progress: number) => {
+    gridMotionController.current?.setTransitionProgress(progress);
+  }, []);
+  const finishOpen = useCallback(() => {
+    gridMotionController.current?.setTransitionProgress(1);
+    setCasePhase('open');
+  }, []);
   const ignoreClose = useCallback(() => undefined, []);
 
   return (
@@ -169,9 +232,9 @@ export function App() {
       {projectBrowserOpen && !selectedProject && <ProjectBrowser filter={filter} onClose={() => { setProjectBrowserOpen(false); restoreFocus(); }} onFilterChange={changeFilter} onSelect={(project) => selectProject(project)} />}
       {selectedProject && !hasCaseStudy(selectedProject.id) && <ProjectDetail project={selectedProject} onClose={closeProject} />}
 
-      {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'opening' && <CaseMorph origin={origin} image={selectedProject.media[0]} opening reducedMotion={reducedMotion} onComplete={finishOpen} />}
-      {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'open' && <PremiumCaseStudy project={selectedProject} onClose={closeProject} reducedMotion={reducedMotion} />}
-      {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'closing' && <><PremiumCaseStudy project={selectedProject} onClose={ignoreClose} reducedMotion={reducedMotion} motionEnabled={false} /><CaseMorph origin={origin} image={selectedProject.media[0]} opening={false} reducedMotion={reducedMotion} onComplete={finishClose} /></>}
+      {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'opening' && <CaseMorph origin={origin} image={selectedProject.media[0]} opening reducedMotion={reducedMotion} onProgress={handleMorphProgress} onComplete={finishOpen} />}
+      {selectedProject && hasCaseStudy(selectedProject.id) && (casePhase === 'open' || casePhase === 'preparing-close') && <PremiumCaseStudy project={selectedProject} onClose={closeProject} reducedMotion={reducedMotion} />}
+      {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'closing' && <><PremiumCaseStudy project={selectedProject} onClose={ignoreClose} reducedMotion={reducedMotion} motionEnabled={false} /><CaseMorph origin={origin} image={selectedProject.media[0]} opening={false} reducedMotion={reducedMotion} onProgress={handleMorphProgress} onComplete={finishClose} /></>}
     </div>
   );
 }

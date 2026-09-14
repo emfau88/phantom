@@ -2,7 +2,23 @@ import { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import type { ScreenRect } from '../scene/grid/distortion';
 
-export function CaseMorph({ origin, image, opening, reducedMotion, onComplete }: { origin: ScreenRect; image?: string; opening: boolean; reducedMotion: boolean; onComplete: () => void }) {
+interface CaseMorphProps {
+  origin: ScreenRect;
+  image?: string;
+  opening: boolean;
+  reducedMotion: boolean;
+  onProgress?: (progress: number) => void;
+  onComplete: () => void;
+}
+
+export function CaseMorph({
+  origin,
+  image,
+  opening,
+  reducedMotion,
+  onProgress,
+  onComplete,
+}: CaseMorphProps) {
   const ref = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const element = ref.current;
@@ -10,10 +26,18 @@ export function CaseMorph({ origin, image, opening, reducedMotion, onComplete }:
     const target = { left: 0, top: 0, width: window.innerWidth, height: Math.min(Math.max(window.innerHeight * 0.78, 520), 820) };
     const from = opening ? origin : target;
     const to = opening ? target : origin;
+    const duration = reducedMotion ? 0.05 : 0.72;
+    const progress = { value: opening ? 0 : 1 };
     gsap.set(element, { ...from, borderRadius: opening ? 1 : 0, opacity: 1 });
-    const tween = gsap.to(element, { ...to, borderRadius: opening ? 0 : 1, duration: reducedMotion ? 0.05 : 0.72, ease: 'power3.inOut', onComplete });
-    return () => { tween.kill(); };
-  }, [onComplete, opening, origin, reducedMotion]);
+    onProgress?.(progress.value);
+    const timeline = gsap.timeline({
+      onUpdate: () => onProgress?.(progress.value),
+      onComplete,
+    });
+    timeline.to(element, { ...to, borderRadius: opening ? 0 : 1, duration, ease: 'power3.inOut' }, 0);
+    timeline.to(progress, { value: opening ? 1 : 0, duration, ease: 'power3.inOut' }, 0);
+    return () => { timeline.kill(); };
+  }, [onComplete, onProgress, opening, origin, reducedMotion]);
   return (
     <div
       ref={ref}

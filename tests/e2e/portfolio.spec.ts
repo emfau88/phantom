@@ -75,10 +75,16 @@ test('opens HEXFRONT, supports Escape and browser history', async ({ page }) => 
   await expect.poll(() => page.evaluate(() => Boolean(window.__EMFAU_GRID__))).toBe(true);
   const box = await canvas.boundingBox();
   await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await expect.poll(async () => page.evaluate(() => window.__EMFAU_GRID__?.state().interactionLocked)).toBe(true);
+  await expect.poll(async () => Number(await page.evaluate(() => window.__EMFAU_GRID__?.state().transitionProgress))).toBeGreaterThan(0.02);
   await expect(page.getByTestId('case-study-hexfront')).toBeVisible({ timeout: 4000 });
+  await expect.poll(async () => Number(await page.evaluate(() => window.__EMFAU_GRID__?.state().transitionProgress))).toBeGreaterThan(0.99);
   await expect(page).toHaveURL(/#project\/hexfront/);
   await page.keyboard.press('Escape');
+  await expect(page.getByTestId('case-morph')).toBeVisible();
   await expect(page.getByTestId('case-study-hexfront')).toHaveCount(0, { timeout: 4000 });
+  await expect.poll(async () => Number(await page.evaluate(() => window.__EMFAU_GRID__?.state().transitionProgress))).toBeLessThan(0.01);
+  await expect.poll(async () => page.evaluate(() => window.__EMFAU_GRID__?.state().interactionLocked)).toBe(false);
   await expect(page).not.toHaveURL(/#project/);
 });
 

@@ -17,6 +17,7 @@ const distortionShader = {
     tDiffuse: { value: null },
     uResolution: { value: new Vector2(1, 1) },
     uDragZoom: { value: 0 },
+    uTransitionProgress: { value: 0 },
     uDistortion: { value: distortionConfig.radial },
     uVignette: { value: distortionConfig.vignette },
   },
@@ -31,6 +32,7 @@ const distortionShader = {
     uniform sampler2D tDiffuse;
     uniform vec2 uResolution;
     uniform float uDragZoom;
+    uniform float uTransitionProgress;
     uniform float uDistortion;
     uniform float uVignette;
     varying vec2 vUv;
@@ -39,15 +41,20 @@ const distortionShader = {
       vec2 p = 2.0 * (vUv - 0.5);
       vec2 metric = p * vec2(0.78, 1.0);
       float radiusSquared = dot(metric, metric);
-      float dragScale = 1.0 + uDragZoom * 0.01;
-      p.x *= (0.885 + uDistortion * radiusSquared) * dragScale;
-      p.y *= (0.885 + uDistortion * 0.86 * radiusSquared) * dragScale;
+      float transition = smoothstep(0.0, 1.0, uTransitionProgress);
+      float drag = uDragZoom * (1.0 - transition);
+      float dragScale = 1.0 + drag * 0.01;
+      float baseScale = mix(0.885, 0.97, transition);
+      float distortion = mix(uDistortion, -0.02, transition);
+      p.x *= (baseScale + distortion * radiusSquared) * dragScale;
+      p.y *= (baseScale + distortion * 0.86 * radiusSquared) * dragScale;
       vec2 sampleUv = p * 0.5 + 0.5;
 
       vec3 color = texture2D(tDiffuse, sampleUv).rgb;
       float distanceToCenter = length((vUv - 0.5) * vec2(uResolution.x / max(uResolution.y, 1.0), 1.0));
       float vignette = smoothstep(0.82, 0.2, distanceToCenter);
-      color *= mix(1.0 - uVignette, 1.0, vignette);
+      float vignetteStrength = mix(uVignette, 0.12, transition);
+      color *= mix(1.0 - vignetteStrength, 1.0, vignette);
 
       float inside = step(0.0, sampleUv.x) * step(sampleUv.x, 1.0)
         * step(0.0, sampleUv.y) * step(sampleUv.y, 1.0);
@@ -78,6 +85,7 @@ export function PortfolioPostProcessing({ motionState }: Props) {
     // Shader uniforms are intentionally mutable render-loop state.
     // eslint-disable-next-line react-hooks/immutability
     pass.uniforms.uDragZoom.value = motionState.dragProgress.value;
+    pass.uniforms.uTransitionProgress.value = motionState.transitionProgress.value;
     composer.render();
   }, 1);
 
