@@ -165,8 +165,8 @@ export function App() {
       {selectedProject && !hasCaseStudy(selectedProject.id) && <ProjectDetail project={selectedProject} onClose={closeProject} />}
 
       {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'opening' && <CaseMorph origin={origin} image={selectedProject.media[0]} opening reducedMotion={reducedMotion} onComplete={finishOpen} />}
-      {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'open' && <PremiumCaseStudy project={selectedProject} onClose={closeProject} />}
-      {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'closing' && <><PremiumCaseStudy project={selectedProject} onClose={ignoreClose} /><CaseMorph origin={origin} image={selectedProject.media[0]} opening={false} reducedMotion={reducedMotion} onComplete={finishClose} /></>}
+      {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'open' && <PremiumCaseStudy project={selectedProject} onClose={closeProject} reducedMotion={reducedMotion} />}
+      {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'closing' && <><PremiumCaseStudy project={selectedProject} onClose={ignoreClose} reducedMotion={reducedMotion} motionEnabled={false} /><CaseMorph origin={origin} image={selectedProject.media[0]} opening={false} reducedMotion={reducedMotion} onComplete={finishClose} /></>}
     </div>
   );
 }

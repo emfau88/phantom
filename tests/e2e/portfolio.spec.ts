@@ -156,6 +156,33 @@ test('premium case studies expose complete editorial content and navigation', as
   await expect(page).not.toHaveURL(/#project/);
 });
 
+test('case study motion reveals masked headings while body copy stays static', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Scroll choreography is sampled once on desktop.');
+  await page.goto('/#project/pocket-pier');
+  const caseStudy = page.getByTestId('case-study-pocket-pier');
+  await expect(caseStudy).toHaveAttribute('data-motion', 'active');
+  await expect(caseStudy).toHaveAttribute('data-motion-ready', 'true');
+
+  const statement = caseStudy.locator('.case-statement');
+  const statementWord = statement.locator('[data-case-word]').first();
+  await expect.poll(async () => statementWord.evaluate((element) => (
+    new DOMMatrix(getComputedStyle(element).transform).m42
+  ))).toBeGreaterThan(5);
+
+  await caseStudy.evaluate((element) => {
+    const target = element.querySelector<HTMLElement>('.case-statement');
+    if (target) element.scrollTop = target.offsetTop - element.clientHeight * 0.35;
+  });
+  await expect.poll(async () => Math.abs(await statementWord.evaluate((element) => (
+    new DOMMatrix(getComputedStyle(element).transform).m42
+  )))).toBeLessThan(0.5);
+
+  const bodyCopy = caseStudy.locator('.case-copy');
+  await expect(bodyCopy).toBeVisible();
+  expect(await bodyCopy.evaluate((element) => getComputedStyle(element).transform)).toBe('none');
+  expect(await bodyCopy.evaluate((element) => getComputedStyle(element).opacity)).toBe('1');
+});
+
 test('reduced motion opens a complete case study without a long morph', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
@@ -169,6 +196,11 @@ test('reduced motion opens a complete case study without a long morph', async ({
   await expect(page.getByTestId('case-morph')).toHaveCount(0);
   await expect(caseStudy.locator('.case-hero-copy')).toBeVisible();
   await expect(caseStudy.locator('.case-facts')).toBeVisible();
+  await expect(caseStudy).toHaveAttribute('data-motion', 'reduced');
+  await expect(caseStudy).not.toHaveAttribute('data-motion-ready');
+  expect(await caseStudy.locator('[data-case-word]').first().evaluate((element) => (
+    getComputedStyle(element).transform
+  ))).toBe('none');
 });
 
 test('functional DOM fallback retains filters and project access', async ({ page }) => {
