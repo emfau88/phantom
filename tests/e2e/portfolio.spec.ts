@@ -5,6 +5,10 @@ test('loads the production grid and exposes all filters', async ({ page }) => {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
   await expect(page.getByTestId('grid-canvas')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.__EMFAU_GRID__?.state().transitionProgress)).toBe(0);
+  const initialMotion = await page.evaluate(() => window.__EMFAU_GRID__?.state());
+  expect(Number.isFinite(Number(initialMotion?.velocityProgress))).toBe(true);
+  expect(initialMotion?.interactionLocked).toBe(false);
   await expect(page.getByRole('button', { name: /Filter/ })).toBeVisible();
   await page.getByRole('button', { name: /^Filter/ }).click();
   await page.getByRole('button', { name: /Games · 13/ }).click();

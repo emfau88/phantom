@@ -10,6 +10,7 @@ import type { Project, ProjectFilter } from '../../data/projects';
 import { projectsForFilter } from '../../data/projects';
 import { screenToSource, warpedRect, type ScreenRect } from './distortion';
 import { createProjectTileTexture, type ProjectTileTexture } from './tileTexture';
+import { createGridMotionState, type GridMotionController } from './motionState';
 
 interface TileUniforms extends Record<string, { value: unknown }> {
   uMap: { value: Texture };
@@ -98,8 +99,9 @@ function createMaterial(texture: Texture): { material: ShaderMaterial; uniforms:
   return { material, uniforms };
 }
 
-export class GridController extends Group {
-  readonly dragZoom = { value: 0 };
+export class GridController extends Group implements GridMotionController {
+  readonly motionState = createGridMotionState();
+  readonly dragZoom = this.motionState.dragProgress;
 
   private readonly projects: Project[];
   private readonly callbacks: GridCallbacks;
@@ -122,6 +124,7 @@ export class GridController extends Group {
   private smoothPointerY = 0;
   private pressed = false;
   private dragging = false;
+  private interactionLocked = false;
   private pointerId: number | null = null;
   private pressX = 0;
   private pressY = 0;
@@ -207,6 +210,15 @@ export class GridController extends Group {
       this.pressed ? 8 : 5,
       frameDelta,
     );
+    const velocityTarget = reducedMotion
+      ? 0
+      : clamp(Math.hypot(this.velocityX, this.velocityY) / 18, 0, 1);
+    this.motionState.velocity.value = damp(
+      this.motionState.velocity.value,
+      velocityTarget,
+      this.pressed ? 10 : 5,
+      frameDelta,
+    );
     this.filterOpacity = damp(this.filterOpacity, 1, 8, frameDelta);
 
     if (!this.pressed && !reducedMotion) {
@@ -228,12 +240,34 @@ export class GridController extends Group {
       offsetY: this.offsetY,
       velocityX: this.velocityX,
       velocityY: this.velocityY,
+      velocityProgress: this.motionState.velocity.value,
+      transitionProgress: this.motionState.transitionProgress.value,
+      interactionLocked: this.interactionLocked,
       pressed: this.pressed,
       dragging: this.dragging,
       tilePoolSize: this.tiles.length,
       filteredCount: this.filteredIndices.length,
       dragZoom: this.dragZoom.value,
     };
+  }
+
+  prepareTransition(): void {
+    this.pressed = false;
+    this.dragging = false;
+    this.pointerId = null;
+    this.velocityX = 0;
+    this.velocityY = 0;
+    this.hoveredCell = null;
+    this.interactionLocked = true;
+  }
+
+  setTransitionProgress(progress: number): void {
+    this.motionState.transitionProgress.value = clamp(progress, 0, 1);
+  }
+
+  resumeAfterTransition(): void {
+    this.motionState.transitionProgress.value = 0;
+    this.interactionLocked = false;
   }
 
   dispose(): void {
@@ -377,7 +411,7 @@ export class GridController extends Group {
   }
 
   private onPointerDown = (event: PointerEvent): void => {
-    if (event.button !== 0 || !this.domElement) return;
+    if (event.button !== 0 || !this.domElement || this.interactionLocked) return;
     const pointer = this.localPointer(event);
     this.pointerX = this.pressX = this.lastX = pointer.x;
     this.pointerY = this.pressY = this.lastY = pointer.y;
@@ -393,6 +427,7 @@ export class GridController extends Group {
   };
 
   private onPointerMove = (event: PointerEvent): void => {
+    if (this.interactionLocked) return;
     const pointer = this.localPointer(event);
     this.pointerX = pointer.x;
     this.pointerY = pointer.y;
@@ -421,6 +456,7 @@ export class GridController extends Group {
   };
 
   private onPointerUp = (event: PointerEvent): void => {
+    if (this.interactionLocked) return;
     if (!this.pressed || event.pointerId !== this.pointerId) return;
     const pointer = this.localPointer(event);
     this.pointerX = pointer.x;
@@ -451,6 +487,10 @@ export class GridController extends Group {
   };
 
   private onWheel = (event: WheelEvent): void => {
+    if (this.interactionLocked) {
+      event.preventDefault();
+      return;
+    }
     const deltaX = Math.abs(event.deltaX) > 2 ? event.deltaX : event.shiftKey ? event.deltaY : 0;
     const deltaY = event.shiftKey ? 0 : event.deltaY;
     this.offsetX += deltaX * 0.58;

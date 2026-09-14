@@ -13,6 +13,7 @@ import { GridScene } from './scene/GridScene';
 import { canUseWebGL } from './scene/grid/webglSupport';
 import type { TileSelection } from './scene/grid/GridController';
 import type { ScreenRect } from './scene/grid/distortion';
+import type { GridMotionController } from './scene/grid/motionState';
 import { useReducedMotion } from './hooks/useReducedMotion';
 
 type CasePhase = 'opening' | 'open' | 'closing';
@@ -47,6 +48,7 @@ export function App() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [hoverProject, setHoverProject] = useState<Project | null>(null);
   const focusBeforeOverlay = useRef<HTMLElement | null>(null);
+  const gridMotionController = useRef<GridMotionController | null>(null);
 
   const overlayOpen = Boolean(selectedProject || section !== 'work' || projectBrowserOpen);
   const statusText = useMemo(() => {
@@ -140,6 +142,9 @@ export function App() {
     setRendererReady(false);
     setWebglAvailable(false);
   }, []);
+  const handleMotionController = useCallback((controller: GridMotionController | null) => {
+    gridMotionController.current = controller;
+  }, []);
   const finishOpen = useCallback(() => setCasePhase('open'), []);
   const ignoreClose = useCallback(() => undefined, []);
 
@@ -151,7 +156,7 @@ export function App() {
       <div className="scene" aria-hidden={overlayOpen}>
         {webglAvailable ? <GridScene filter={filter} reducedMotion={reducedMotion} onSelect={handleTileSelect}
           onActiveIndex={setActiveIndex} onHoverProject={setHoverProject} onInteraction={handleInteraction}
-          onReady={handleRendererReady} onContextLost={handleContextLost} />
+          onReady={handleRendererReady} onContextLost={handleContextLost} onMotionController={handleMotionController} />
           : <FallbackGrid filter={filter} onSelect={(project) => selectProject(project)} />}
       </div>
 

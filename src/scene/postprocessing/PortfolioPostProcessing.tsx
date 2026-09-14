@@ -6,9 +6,10 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { distortionConfig } from '../grid/distortion';
+import type { GridMotionState } from '../grid/motionState';
 
 interface Props {
-  dragZoom: { value: number };
+  motionState: GridMotionState;
 }
 
 const distortionShader = {
@@ -55,7 +56,7 @@ const distortionShader = {
   `,
 };
 
-export function PortfolioPostProcessing({ dragZoom }: Props) {
+export function PortfolioPostProcessing({ motionState }: Props) {
   const { gl, scene, camera, size } = useThree();
   const { composer, pass } = useMemo(() => {
     const nextComposer = new EffectComposer(gl);
@@ -76,7 +77,7 @@ export function PortfolioPostProcessing({ dragZoom }: Props) {
   useFrame(() => {
     // Shader uniforms are intentionally mutable render-loop state.
     // eslint-disable-next-line react-hooks/immutability
-    pass.uniforms.uDragZoom.value = dragZoom.value;
+    pass.uniforms.uDragZoom.value = motionState.dragProgress.value;
     composer.render();
   }, 1);
 

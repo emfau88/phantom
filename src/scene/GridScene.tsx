@@ -5,6 +5,7 @@ import type { Project, ProjectFilter } from '../data/projects';
 import { projects } from '../data/projects';
 import { GridController, type GridCallbacks, type TileSelection } from './grid/GridController';
 import { PortfolioPostProcessing } from './postprocessing/PortfolioPostProcessing';
+import type { GridMotionController } from './grid/motionState';
 
 interface GridSceneProps {
   filter: ProjectFilter;
@@ -15,6 +16,7 @@ interface GridSceneProps {
   onInteraction: () => void;
   onReady?: () => void;
   onContextLost?: () => void;
+  onMotionController?: (controller: GridMotionController | null) => void;
 }
 
 type GridPrimitiveProps = GridSceneProps;
@@ -36,6 +38,7 @@ function GridPrimitive({
   onInteraction,
   onReady,
   onContextLost,
+  onMotionController,
 }: GridPrimitiveProps) {
   const { gl, size } = useThree();
   const callbacks = useMemo<GridCallbacks>(() => ({
@@ -48,9 +51,13 @@ function GridPrimitive({
 
   useEffect(() => {
     controller.connect(gl.domElement);
+    onMotionController?.(controller);
     onReady?.();
-    return () => controller.dispose();
-  }, [controller, gl.domElement, onReady]);
+    return () => {
+      onMotionController?.(null);
+      controller.dispose();
+    };
+  }, [controller, gl.domElement, onMotionController, onReady]);
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -83,7 +90,7 @@ function GridPrimitive({
   return (
     <>
       <primitive object={controller} />
-      <PortfolioPostProcessing dragZoom={controller.dragZoom} />
+      <PortfolioPostProcessing motionState={controller.motionState} />
     </>
   );
 }
