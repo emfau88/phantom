@@ -173,12 +173,42 @@ test('premium case studies expose complete editorial content and navigation', as
   await expect(caseStudy).toBeVisible();
   await expect(caseStudy.locator('.case-fact')).toHaveCount(5);
   await expect(caseStudy.locator('.case-pillars > article')).toHaveCount(3);
-  await expect(caseStudy.locator('.case-media')).toBeVisible();
+  await expect(caseStudy.getByTestId('media-gallery')).toBeVisible();
   await caseStudy.evaluate((element) => { element.scrollTop = element.scrollHeight; });
   await expect(caseStudy.getByRole('button', { name: 'Back to grid' })).toBeVisible();
   await caseStudy.getByRole('button', { name: 'Back to grid' }).click();
   await expect(caseStudy).toHaveCount(0);
   await expect(page).not.toHaveURL(/#project/);
+});
+
+test('spatial media gallery supports controls, keyboard and pointer drag', async ({ page }, testInfo) => {
+  await page.goto('/#project/pocket-pier');
+  await expect(page.getByTestId('case-study-pocket-pier')).toBeVisible({ timeout: 7000 });
+  const gallery = page.getByTestId('media-gallery');
+  await expect(gallery).toBeVisible();
+  const slides = gallery.locator('.media-gallery-slide');
+  await expect(slides).toHaveCount(3);
+  await expect(gallery.locator('header')).toContainText('01 — 03');
+  await gallery.getByRole('button', { name: 'Next media' }).click();
+  await expect(slides.nth(1)).toHaveAttribute('aria-current', 'true');
+  const viewport = gallery.locator('.media-gallery-viewport');
+  await viewport.focus();
+  await page.keyboard.press('End');
+  await expect(slides.nth(2)).toHaveAttribute('aria-current', 'true');
+  await page.keyboard.press('Home');
+  await expect(slides.nth(0)).toHaveAttribute('aria-current', 'true');
+  if (testInfo.project.name !== 'desktop') return;
+  await viewport.dispatchEvent('wheel', { deltaX: 900, deltaY: 0 });
+  await expect(slides.nth(0)).not.toHaveAttribute('aria-current', 'true');
+  await page.keyboard.press('Home');
+  await expect(slides.nth(0)).toHaveAttribute('aria-current', 'true');
+  const box = await viewport.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.move(box!.x + box!.width * 0.72, box!.y + box!.height * 0.45);
+  await page.mouse.down();
+  await page.mouse.move(box!.x + box!.width * 0.28, box!.y + box!.height * 0.45, { steps: 8 });
+  await page.mouse.up();
+  await expect(slides.nth(0)).not.toHaveAttribute('aria-current', 'true');
 });
 
 test('case study motion reveals masked headings while body copy stays static', async ({ page }, testInfo) => {
@@ -222,6 +252,7 @@ test('reduced motion opens a complete case study without a long morph', async ({
   await expect(caseStudy.locator('.case-hero-copy')).toBeVisible();
   await expect(caseStudy.locator('.case-facts')).toBeVisible();
   await expect(caseStudy).toHaveAttribute('data-motion', 'reduced');
+  await expect(caseStudy.getByTestId('media-gallery')).toHaveAttribute('data-reduced-motion', 'true');
   await expect(caseStudy).not.toHaveAttribute('data-motion-ready');
   expect(await caseStudy.locator('[data-case-word]').first().evaluate((element) => (
     getComputedStyle(element).transform

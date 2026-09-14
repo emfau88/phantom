@@ -3,6 +3,7 @@ import type { Project } from '../data/projects';
 import { projects } from '../data/projects';
 import { caseStudies, hasCaseStudy, type CaseStudyContent } from '../data/caseStudies';
 import { useCaseStudyMotion } from '../hooks/useCaseStudyMotion';
+import { MediaGallery } from './MediaGallery';
 
 function MaskedWords({ text }: { text: string }) {
   return text.split(/\s+/).map((word, index) => (
@@ -33,7 +34,11 @@ export function PremiumCaseStudy({
   const content: CaseStudyContent = caseStudies[project.id];
   const index = String(projects.indexOf(project) + 1).padStart(2, '0');
   const hero = project.media[0];
-  const secondary = project.media.slice(1, 3);
+  const galleryItems = project.media.map((src, mediaIndex) => ({
+    src,
+    alt: content.mediaAlts[mediaIndex] ?? `${project.title} project view ${mediaIndex + 1}`,
+    caption: content.mediaCaptions[mediaIndex] ?? `${project.title} / project view`,
+  }));
   const primaryAction = project.liveUrl ?? project.repositoryUrl;
   const primaryLabel = project.liveUrl
     ? project.category === 'APP' ? 'Open on Google Play ↗' : 'Play current build ↗'
@@ -73,8 +78,7 @@ export function PremiumCaseStudy({
           {content.pillars.map((pillar) => <article key={pillar.label}><span>{pillar.label}</span><h2 aria-label={pillar.title} data-case-scroll-reveal><MaskedWords text={pillar.title} /></h2><p>{pillar.body}</p></article>)}
         </section>
 
-        {secondary[0] && <section className="case-media"><figure><img src={secondary[0]} alt={content.mediaAlts[1] ?? `${project.title} project view`} /><figcaption><span>{content.mediaCaptions[1] ?? 'Project view'}</span><span>{project.title} / {project.year}</span></figcaption></figure></section>}
-        {secondary[1] && hero && <section className="case-duo"><figure><img src={hero} alt={content.mediaAlts[0]} /><figcaption>{content.mediaCaptions[0]}</figcaption></figure><figure><img src={secondary[1]} alt={content.mediaAlts[2] ?? `${project.title} detail`} /><figcaption>{content.mediaCaptions[2] ?? 'Project detail'}</figcaption></figure></section>}
+        <MediaGallery items={galleryItems} label={`${project.title} media gallery`} reducedMotion={reducedMotion || !motionEnabled} />
 
         <section className="case-statement"><div>Design / system</div><div><h2 aria-label={content.designTitle} data-case-scroll-reveal><MaskedWords text={content.designTitle} /></h2><p>{content.designBody}</p></div></section>
 

@@ -71,3 +71,15 @@ The drag response now reaches a bounded 3.2 percent pressure scale, relaxes the
 radial bend by at most 10 percent and feeds velocity only into vignette strength.
 CPU-side hit testing uses the same bounded scale and radial response as the
 post-processing shader, so the visual tile and interactive tile remain aligned.
+
+## Milestone C comparison
+
+The 2026-09-14 Tile Hover run measured 2.77 ms average / 3.00 ms p95 while idle
+and 2.92 ms average / 5.30 ms p95 during drag. The hover extends the existing
+tile shader only; it adds no meshes or textures, and the pool remains fixed at
+99 tiles.
+
+The horizontal case-study gallery measured 2.99 ms average / 5.50 ms p95 while
+idle and 3.03 ms average / 5.50 ms p95 during pointer drag, inertia and snap.
+Only the gallery track and its three visible media figures are transformed.
+The production bundle after this milestone is 1,301.88 kB raw / 374.96 kB gzip.
