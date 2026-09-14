@@ -10,6 +10,7 @@ import type { GridMotionState } from '../grid/motionState';
 
 interface Props {
   motionState: GridMotionState;
+  active?: boolean;
 }
 
 const distortionShader = {
@@ -70,7 +71,7 @@ const distortionShader = {
   `,
 };
 
-export function PortfolioPostProcessing({ motionState }: Props) {
+export function PortfolioPostProcessing({ motionState, active = true }: Props) {
   const { gl, scene, camera, size } = useThree();
   const { composer, pass } = useMemo(() => {
     const nextComposer = new EffectComposer(gl);
@@ -89,6 +90,7 @@ export function PortfolioPostProcessing({ motionState }: Props) {
   useEffect(() => () => composer.dispose(), [composer]);
 
   useFrame(() => {
+    if (!active) return;
     // Shader uniforms are intentionally mutable render-loop state.
     // eslint-disable-next-line react-hooks/immutability
     pass.uniforms.uDragZoom.value = motionState.dragProgress.value;

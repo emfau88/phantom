@@ -83,3 +83,16 @@ The horizontal case-study gallery measured 2.99 ms average / 5.50 ms p95 while
 idle and 3.03 ms average / 5.50 ms p95 during pointer drag, inertia and snap.
 Only the gallery track and its three visible media figures are transformed.
 The production bundle after this milestone is 1,301.88 kB raw / 374.96 kB gzip.
+
+## Milestone D comparison
+
+The Selected Work index measured 2.76 ms average / 2.90 ms p95 while its
+signature preview was idle and 2.78 ms average / 2.90 ms p95 during the
+noise-displacement morph. Its WebGL canvas renders on demand, while the main
+grid renderer pauses under non-transition overlays and resumes when the index
+closes. This keeps the two canvases from competing for continuous frame work.
+
+The morph keeps two media textures only while transitioning, disposes the old
+texture on completion and falls back to a normal responsive image if WebGL or a
+cross-origin texture is unavailable. The production bundle after this milestone
+is 1,307.52 kB raw / 377.09 kB gzip.

@@ -56,6 +56,10 @@ export function MediaGallery({ items, label, reducedMotion }: MediaGalleryProps)
   }, [items.length, reducedMotion]);
 
   const snapTo = useCallback((index: number, velocity = 0) => {
+    if (wheelTimerRef.current !== null) {
+      window.clearTimeout(wheelTimerRef.current);
+      wheelTimerRef.current = null;
+    }
     const safeIndex = clamp(index, 0, Math.max(0, items.length - 1));
     const target = -safeIndex * stepRef.current;
     tweenRef.current?.kill();

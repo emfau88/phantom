@@ -56,6 +56,7 @@ export function App() {
   const casePhaseRef = useRef(casePhase);
 
   const overlayOpen = Boolean(selectedProject || section !== 'work' || projectBrowserOpen);
+  const gridMotionActive = !overlayOpen || casePhase === 'opening' || casePhase === 'closing';
   const statusText = useMemo(() => {
     if (!webglAvailable) return 'Accessible project view';
     if (!rendererReady) return 'Composing selected work';
@@ -217,7 +218,7 @@ export function App() {
       <div className="watermark" aria-hidden="true"><span>EMFAU</span><span>SPATIAL INDEX</span></div>
 
       <div className="scene" aria-hidden={overlayOpen}>
-        {webglAvailable ? <GridScene filter={filter} reducedMotion={reducedMotion} onSelect={handleTileSelect}
+        {webglAvailable ? <GridScene active={gridMotionActive} filter={filter} reducedMotion={reducedMotion} onSelect={handleTileSelect}
           onActiveIndex={setActiveIndex} onHoverProject={setHoverProject} onInteraction={handleInteraction}
           onReady={handleRendererReady} onContextLost={handleContextLost} onMotionController={handleMotionController} />
           : <FallbackGrid filter={filter} onSelect={(project) => selectProject(project)} />}
@@ -229,7 +230,7 @@ export function App() {
       <div className={`interaction-hint ${overlayOpen ? 'is-hidden' : ''}`} aria-live="polite"><i />{statusText}</div>
 
       {section !== 'work' && !selectedProject && <SectionSheet section={section} onClose={() => { setSection('work'); restoreFocus(); }} />}
-      {projectBrowserOpen && !selectedProject && <ProjectBrowser filter={filter} onClose={() => { setProjectBrowserOpen(false); restoreFocus(); }} onFilterChange={changeFilter} onSelect={(project) => selectProject(project)} />}
+      {projectBrowserOpen && !selectedProject && <ProjectBrowser filter={filter} reducedMotion={reducedMotion} webglEnabled={webglAvailable} onClose={() => { setProjectBrowserOpen(false); restoreFocus(); }} onFilterChange={changeFilter} onSelect={(project) => selectProject(project)} />}
       {selectedProject && !hasCaseStudy(selectedProject.id) && <ProjectDetail project={selectedProject} onClose={closeProject} />}
 
       {selectedProject && hasCaseStudy(selectedProject.id) && casePhase === 'opening' && <CaseMorph origin={origin} image={selectedProject.media[0]} opening reducedMotion={reducedMotion} onProgress={handleMorphProgress} onComplete={finishOpen} />}

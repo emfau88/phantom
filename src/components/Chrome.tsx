@@ -47,15 +47,15 @@ export function Chrome(props: Props) {
           <div className="top-right">
             <div className="header-meta">
               <span>GERMANY, DE</span><BerlinClock />
-              <span><i className="status-dot" />AVAILABLE</span><b>SELECTED WORK</b>
+              <span><i className="status-dot" />AVAILABLE</span><button className="selected-work-trigger" type="button" onClick={props.onBrowseProjects}>SELECTED WORK</button>
             </div>
             <button className="talk-btn" type="button" onClick={() => props.onSectionChange('contact')}>Let's talk</button>
           </div>
         </div>
       </header>
-      <div className={`counter ${props.hidden ? 'is-hidden' : ''}`} aria-live="polite">
+      <button className={`counter ${props.hidden ? 'is-hidden' : ''}`} type="button" onClick={props.onBrowseProjects} aria-label="Browse all projects" aria-live="polite">
         <b>{String(props.activeIndex + 1).padStart(2, '0')}</b><span> / {String(total).padStart(2, '0')}</span>
-      </div>
+      </button>
       <nav className={`dock ${props.hidden ? 'is-hidden' : ''}`} aria-label="Primary navigation">
         {(['work', 'about', 'contact'] as Section[]).map((item) => (
           <button key={item} type="button" className={props.section === item ? 'active' : ''}

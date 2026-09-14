@@ -8,6 +8,7 @@ import { PortfolioPostProcessing } from './postprocessing/PortfolioPostProcessin
 import type { GridMotionController } from './grid/motionState';
 
 interface GridSceneProps {
+  active?: boolean;
   filter: ProjectFilter;
   reducedMotion: boolean;
   onSelect: (selection: TileSelection) => void;
@@ -30,6 +31,7 @@ declare global {
 }
 
 function GridPrimitive({
+  active = true,
   filter,
   reducedMotion,
   onSelect,
@@ -85,12 +87,14 @@ function GridPrimitive({
     };
   }, [controller]);
 
-  useFrame((_, delta) => controller.update(delta, reducedMotion), 0);
+  useFrame((_, delta) => {
+    if (active) controller.update(delta, reducedMotion);
+  }, 0);
 
   return (
     <>
       <primitive object={controller} />
-      <PortfolioPostProcessing motionState={controller.motionState} />
+      <PortfolioPostProcessing motionState={controller.motionState} active={active} />
     </>
   );
 }

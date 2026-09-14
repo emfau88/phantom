@@ -148,6 +148,40 @@ test('About, Contact and accessible project browser are keyboard reachable', asy
   await expect(page.getByRole('listitem')).toHaveCount(20);
 });
 
+test('selected work index previews projects through the signature morph', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Browse all projects' }).click();
+  const morph = page.getByTestId('signature-morph');
+  await expect(morph).toBeVisible();
+  await expect(morph).toHaveAttribute('data-project', 'hexfront');
+  await expect(morph.getByTestId('signature-morph-canvas')).toBeVisible();
+  await page.locator('.project-browser li button').nth(2).focus();
+  await expect(morph).toHaveAttribute('data-project', 'pocket-pier');
+  await expect(page.locator('.project-browser-preview')).toContainText('Pocket Pier');
+  await page.getByRole('button', { name: 'Apps', exact: true }).click();
+  await expect(morph).toHaveAttribute('data-project', 'mirror');
+  await expect(page.getByRole('listitem')).toHaveCount(6);
+});
+
+test('signature morph honors reduced motion and the WebGL fallback', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Fallback variants are covered once on desktop.');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Browse all projects' }).click();
+  let morph = page.getByTestId('signature-morph');
+  await expect(morph).toHaveAttribute('data-reduced-motion', 'true');
+  await expect(morph.getByTestId('signature-morph-canvas')).toBeVisible();
+  await page.locator('.project-browser li button').nth(2).focus();
+  await expect(morph).toHaveAttribute('data-project', 'pocket-pier');
+
+  await page.goto('/?fallback=1');
+  await page.getByRole('button', { name: 'Browse all projects' }).click();
+  morph = page.getByTestId('signature-morph');
+  await expect(morph).toHaveAttribute('data-reduced-motion', 'true');
+  await expect(morph.getByTestId('signature-morph-canvas')).toHaveCount(0);
+  await expect(morph.locator('.signature-morph-fallback')).toBeVisible();
+});
+
 test('every project has a working premium direct-link case study', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'The full catalogue route sweep runs once on desktop.');
   await page.emulateMedia({ reducedMotion: 'reduce' });
