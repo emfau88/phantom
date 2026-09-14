@@ -16,7 +16,17 @@ export const distortionConfig = {
   horizontalMetric: 0.78,
   verticalMultiplier: 0.86,
   vignette: 0.34,
+  dragScaleGain: 0.032,
+  dragDistortionRelaxation: 0.1,
 } as const;
+
+export function distortionMotion(dragProgress = 0): { dragScale: number; radial: number } {
+  const drag = Math.min(1, Math.max(0, dragProgress));
+  return {
+    dragScale: 1 + drag * distortionConfig.dragScaleGain,
+    radial: distortionConfig.radial * (1 - drag * distortionConfig.dragDistortionRelaxation),
+  };
+}
 
 export function screenToSource(
   px: number,
@@ -29,12 +39,12 @@ export function screenToSource(
   let y = 2 * ((1 - py / Math.max(height, 1)) - 0.5);
   const metricX = x * distortionConfig.horizontalMetric;
   const radiusSquared = metricX * metricX + y * y;
-  const dragScale = 1 + dragZoom * 0.01;
+  const { dragScale, radial } = distortionMotion(dragZoom);
 
-  x *= (distortionConfig.baseScale + distortionConfig.radial * radiusSquared) * dragScale;
+  x *= (distortionConfig.baseScale + radial * radiusSquared) * dragScale;
   y *= (
     distortionConfig.baseScale
-    + distortionConfig.radial * distortionConfig.verticalMultiplier * radiusSquared
+    + radial * distortionConfig.verticalMultiplier * radiusSquared
   ) * dragScale;
 
   return {
@@ -52,7 +62,7 @@ export function sourceToScreen(
 ): ScreenPoint {
   const targetX = 2 * (sourceX / Math.max(width, 1) - 0.5);
   const targetY = 2 * ((1 - sourceY / Math.max(height, 1)) - 0.5);
-  const dragScale = 1 + dragZoom * 0.01;
+  const { dragScale, radial } = distortionMotion(dragZoom);
   let x = targetX / distortionConfig.baseScale;
   let y = targetY / distortionConfig.baseScale;
 
@@ -60,11 +70,11 @@ export function sourceToScreen(
     const metricX = x * distortionConfig.horizontalMetric;
     const radiusSquared = metricX * metricX + y * y;
     const scaleX = (
-      distortionConfig.baseScale + distortionConfig.radial * radiusSquared
+      distortionConfig.baseScale + radial * radiusSquared
     ) * dragScale;
     const scaleY = (
       distortionConfig.baseScale
-      + distortionConfig.radial * distortionConfig.verticalMultiplier * radiusSquared
+      + radial * distortionConfig.verticalMultiplier * radiusSquared
     ) * dragScale;
     x = targetX / Math.max(0.12, scaleX);
     y = targetY / Math.max(0.12, scaleY);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { screenToSource, sourceToScreen, warpedRect } from '../src/scene/grid/distortion';
+import { distortionMotion, screenToSource, sourceToScreen, warpedRect } from '../src/scene/grid/distortion';
 
 describe('distortion mapping', () => {
   it.each([
@@ -17,6 +17,13 @@ describe('distortion mapping', () => {
     expect(result.width).toBeGreaterThan(8);
     expect(result.height).toBeGreaterThan(8);
     expect(Object.values(result).every(Number.isFinite)).toBe(true);
+  });
+
+  it('uses the same bounded drag response for rendering and picking', () => {
+    expect(distortionMotion(-1)).toEqual(distortionMotion(0));
+    expect(distortionMotion(2)).toEqual(distortionMotion(1));
+    expect(distortionMotion(1).dragScale).toBeCloseTo(1.032, 6);
+    expect(distortionMotion(1).radial).toBeGreaterThan(distortionMotion(0).radial);
   });
 
   it.each([0, 0.5, 1])('keeps warped transition bounds finite at drag zoom %d', (dragZoom) => {

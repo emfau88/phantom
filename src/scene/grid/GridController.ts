@@ -207,7 +207,7 @@ export class GridController extends Group implements GridMotionController {
     this.dragZoom.value = damp(
       this.dragZoom.value,
       this.pressed && !reducedMotion ? 1 : 0,
-      this.pressed ? 8 : 5,
+      this.pressed ? 9 : 4.2,
       frameDelta,
     );
     const velocityTarget = reducedMotion

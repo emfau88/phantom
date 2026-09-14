@@ -57,3 +57,17 @@ idle and 2.98 ms average / 3.10 ms p95 during the drag/release sample. The idle
 average is about 7 percent above the frozen 2.99 ms baseline and remains below
 the 20 percent investigation threshold. Grid behavior and the fixed 99-tile pool
 are unchanged; case-study motion is mounted only while a project page is open.
+
+## Milestone B comparison
+
+The final 2026-09-14 validation run after Bulks 2–4 measured 2.77 ms average /
+2.90 ms p95 both while idle and during the drag/release sample. That is below
+the frozen 2.99 ms idle and 3.00 ms drag averages, with the fixed 99-tile pool
+unchanged. Two preceding warm runs showed transient scheduler variance, so three
+runs were sampled before acceptance; the final interaction state still settled
+to effectively zero drag and velocity without opening a project.
+
+The drag response now reaches a bounded 3.2 percent pressure scale, relaxes the
+radial bend by at most 10 percent and feeds velocity only into vignette strength.
+CPU-side hit testing uses the same bounded scale and radial response as the
+post-processing shader, so the visual tile and interactive tile remain aligned.
