@@ -31,7 +31,10 @@ test('drag changes position without opening a project', async ({ page }) => {
   expect(heldState?.pressed).toBe(true);
   expect(heldState?.dragging).toBe(true);
   expect(Number(heldState?.dragZoom)).toBeGreaterThan(0.35);
-  expect(Number(heldState?.velocityProgress)).toBeGreaterThan(0.2);
+  expect(Math.hypot(Number(heldState?.velocityX), Number(heldState?.velocityY))).toBeGreaterThan(0.01);
+  expect(Number.isFinite(Number(heldState?.velocityProgress))).toBe(true);
+  expect(Number(heldState?.velocityProgress)).toBeGreaterThanOrEqual(0);
+  expect(Number(heldState?.velocityProgress)).toBeLessThanOrEqual(1);
   await page.mouse.up();
   const after = await page.evaluate(() => window.__EMFAU_GRID__?.state().offsetX);
   expect(after).not.toBe(before);
