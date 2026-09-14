@@ -102,6 +102,20 @@ test('curved-edge picking follows the visible tile', async ({ page }) => {
   await expect(page.getByRole('dialog')).toBeVisible({ timeout: 4000 });
 });
 
+test('desktop hover eases in without changing the selected tile', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Hover is a fine-pointer interaction.');
+  await page.goto('/');
+  const canvas = page.getByTestId('grid-canvas');
+  await expect.poll(() => page.evaluate(() => Boolean(window.__EMFAU_GRID__))).toBe(true);
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  const point = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+  await page.mouse.move(point.x, point.y);
+  await expect.poll(async () => Number(await page.evaluate(() => window.__EMFAU_GRID__?.state().hoverStrength))).toBeGreaterThan(0.8);
+  await page.mouse.click(point.x, point.y);
+  await expect(page.getByTestId('case-study-hexfront')).toBeVisible({ timeout: 4000 });
+});
+
 test('real touch drag moves the grid without selecting', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'Touch input is covered by the mobile project.');
   await page.goto('/');

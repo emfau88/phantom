@@ -41,10 +41,13 @@ export interface GridCallbacks {
 }
 
 const vertexShader = /* glsl */ `
+  uniform float uHover;
   varying vec2 vUv;
   void main() {
     vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vec3 transformed = position;
+    transformed.xy *= 1.0 + uHover * 0.024;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
   }
 `;
 
@@ -56,13 +59,23 @@ const fragmentShader = /* glsl */ `
   varying vec2 vUv;
 
   void main() {
-    vec4 sampleColor = texture2D(uMap, vUv);
+    vec2 mediaMin = vec2(0.03, 0.12);
+    vec2 mediaMax = vec2(0.97, 0.876);
+    float mediaMask = step(mediaMin.x, vUv.x) * step(vUv.x, mediaMax.x)
+      * step(mediaMin.y, vUv.y) * step(vUv.y, mediaMax.y);
+    vec2 mediaCenter = (mediaMin + mediaMax) * 0.5;
+    vec2 mediaUv = mediaCenter + (vUv - mediaCenter) / (1.0 + uHover * 0.026);
+    mediaUv += (uPointer - 0.5) * 0.006 * uHover;
+    vec2 sampleUv = mix(vUv, mediaUv, mediaMask);
+    vec4 sampleColor = texture2D(uMap, sampleUv);
     float luminance = dot(sampleColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-    float saturation = 0.88 + uHover * 0.12;
+    float saturation = 0.88 + uHover * 0.16;
     vec3 color = mix(vec3(luminance), sampleColor.rgb, saturation);
-    color *= 0.77 + uHover * 0.28;
-    float glow = smoothstep(0.76, 0.0, distance(vUv, uPointer));
-    color += vec3(0.055 * glow * uHover);
+    color *= 0.77 + uHover * 0.255;
+    float glow = smoothstep(0.58, 0.0, distance(vUv, uPointer)) * mediaMask;
+    color += vec3(0.045 * glow * uHover);
+    float edge = 1.0 - smoothstep(0.36, 0.72, distance(vUv, vec2(0.5)));
+    color += vec3(0.012 * edge * uHover);
     gl_FragColor = vec4(color, sampleColor.a * uOpacity);
   }
 `;
@@ -248,6 +261,7 @@ export class GridController extends Group implements GridMotionController {
       tilePoolSize: this.tiles.length,
       filteredCount: this.filteredIndices.length,
       dragZoom: this.dragZoom.value,
+      hoverStrength: Math.max(0, ...this.tiles.map((tile) => tile.uniforms.uHover.value as number)),
     };
   }
 
@@ -324,6 +338,7 @@ export class GridController extends Group implements GridMotionController {
           isHovered ? 13 : 7,
           delta,
         );
+        tile.mesh.renderOrder = isHovered ? 2 : 0;
         tile.uniforms.uOpacity.value = this.filterOpacity;
         if (isHovered) {
           const source = screenToSource(
