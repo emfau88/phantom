@@ -40,7 +40,11 @@ the R3F canvas caps DPR to the range 1–1.55.
 
 ## Remaining optimization opportunities
 
-The production JavaScript is 1,246.66 kB raw / 353.85 kB gzip. A later pass can
+The production JavaScript is 1,246.87 kB raw / 353.90 kB gzip. A later pass can
 lazy-load the case-study/GSAP branch and investigate Three.js chunking. Localizing
 licensed, optimized media would also reduce origin latency and make dimensions
 predictable. Neither issue prevented the current validation suite from passing.
+
+The pre-motion-upgrade measurement from 2026-09-14, including held-drag and
+release-state values, is recorded in `motion-baseline/README.md`. Future motion
+bulks should compare against that run using the same environment and method.

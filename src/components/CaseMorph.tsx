@@ -14,5 +14,18 @@ export function CaseMorph({ origin, image, opening, reducedMotion, onComplete }:
     const tween = gsap.to(element, { ...to, borderRadius: opening ? 0 : 1, duration: reducedMotion ? 0.05 : 0.72, ease: 'power3.inOut', onComplete });
     return () => { tween.kill(); };
   }, [onComplete, opening, origin, reducedMotion]);
-  return <div ref={ref} className="case-morph" aria-hidden="true">{image && <img src={image} alt="" />}</div>;
+  return (
+    <div
+      ref={ref}
+      className="case-morph"
+      aria-hidden="true"
+      data-testid="case-morph"
+      data-origin-left={origin.left}
+      data-origin-top={origin.top}
+      data-origin-width={origin.width}
+      data-origin-height={origin.height}
+    >
+      {image && <img src={image} alt="" />}
+    </div>
+  );
 }

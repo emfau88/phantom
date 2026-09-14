@@ -30,12 +30,21 @@ const idle = await sampleFrames(180);
 const canvas = page.getByTestId('grid-canvas');
 const box = await canvas.boundingBox();
 if (!box) throw new Error('Grid canvas has no measurable bounds.');
+const interaction = {};
+interaction.before = await page.evaluate(() => window.__EMFAU_GRID__?.state());
 const dragSample = sampleFrames(180);
 await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
 await page.mouse.down();
 await page.mouse.move(box.x + box.width * 0.68, box.y + box.height * 0.58, { steps: 24 });
+await page.waitForTimeout(140);
+interaction.held = await page.evaluate(() => window.__EMFAU_GRID__?.state());
 await page.mouse.up();
+interaction.released = await page.evaluate(() => window.__EMFAU_GRID__?.state());
+await page.waitForTimeout(350);
+interaction.inertia350ms = await page.evaluate(() => window.__EMFAU_GRID__?.state());
 const drag = await dragSample;
+await page.waitForTimeout(1000);
+interaction.settled = await page.evaluate(() => window.__EMFAU_GRID__?.state());
 const runtime = await page.evaluate(() => {
   const canvasElement = document.querySelector('canvas');
   const state = window.__EMFAU_GRID__?.state();
@@ -51,5 +60,5 @@ const runtime = await page.evaluate(() => {
   };
 });
 
-process.stdout.write(`${JSON.stringify({ measuredAt: new Date().toISOString(), idle, drag, runtime }, null, 2)}\n`);
+process.stdout.write(`${JSON.stringify({ measuredAt: new Date().toISOString(), idle, drag, interaction, runtime }, null, 2)}\n`);
 await browser.close();

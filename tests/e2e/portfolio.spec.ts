@@ -22,10 +22,47 @@ test('drag changes position without opening a project', async ({ page }) => {
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
   await page.mouse.down();
   await page.mouse.move(box!.x + box!.width / 2 + 120, box!.y + box!.height / 2 + 40, { steps: 5 });
+  await page.waitForTimeout(140);
+  const heldState = await page.evaluate(() => window.__EMFAU_GRID__?.state());
+  expect(heldState?.pressed).toBe(true);
+  expect(heldState?.dragging).toBe(true);
+  expect(Number(heldState?.dragZoom)).toBeGreaterThan(0.35);
   await page.mouse.up();
   const after = await page.evaluate(() => window.__EMFAU_GRID__?.state().offsetX);
   expect(after).not.toBe(before);
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect.poll(async () => Number(await page.evaluate(() => window.__EMFAU_GRID__?.state().dragZoom))).toBeLessThan(0.08);
+});
+
+test('sub-threshold movement selects and records a finite morph origin', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Pointer threshold and morph geometry are covered once on desktop.');
+  await page.goto('/');
+  const canvas = page.getByTestId('grid-canvas');
+  await expect.poll(() => page.evaluate(() => Boolean(window.__EMFAU_GRID__))).toBe(true);
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  const click = { x: box!.x + box!.width / 2 + 3, y: box!.y + box!.height / 2 + 2 };
+  await page.mouse.move(click.x - 3, click.y - 2);
+  await page.mouse.down();
+  await page.mouse.move(click.x, click.y);
+  await page.mouse.up();
+
+  const morph = page.getByTestId('case-morph');
+  await expect(morph).toBeVisible();
+  const origin = await morph.evaluate((element) => ({
+    left: Number(element.dataset.originLeft),
+    top: Number(element.dataset.originTop),
+    width: Number(element.dataset.originWidth),
+    height: Number(element.dataset.originHeight),
+  }));
+  expect(Object.values(origin).every(Number.isFinite)).toBe(true);
+  expect(origin.width).toBeGreaterThan(8);
+  expect(origin.height).toBeGreaterThan(8);
+  expect(click.x).toBeGreaterThan(origin.left);
+  expect(click.x).toBeLessThan(origin.left + origin.width);
+  expect(click.y).toBeGreaterThan(origin.top);
+  expect(click.y).toBeLessThan(origin.top + origin.height);
+  await expect(page.getByRole('dialog')).toBeVisible({ timeout: 4000 });
 });
 
 test('opens HEXFRONT, supports Escape and browser history', async ({ page }) => {
@@ -117,6 +154,21 @@ test('premium case studies expose complete editorial content and navigation', as
   await caseStudy.getByRole('button', { name: 'Back to grid' }).click();
   await expect(caseStudy).toHaveCount(0);
   await expect(page).not.toHaveURL(/#project/);
+});
+
+test('reduced motion opens a complete case study without a long morph', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  const canvas = page.getByTestId('grid-canvas');
+  await expect.poll(() => page.evaluate(() => Boolean(window.__EMFAU_GRID__))).toBe(true);
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  const caseStudy = page.getByTestId('case-study-hexfront');
+  await expect(caseStudy).toBeVisible({ timeout: 900 });
+  await expect(page.getByTestId('case-morph')).toHaveCount(0);
+  await expect(caseStudy.locator('.case-hero-copy')).toBeVisible();
+  await expect(caseStudy.locator('.case-facts')).toBeVisible();
 });
 
 test('functional DOM fallback retains filters and project access', async ({ page }) => {

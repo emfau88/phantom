@@ -226,6 +226,9 @@ export class GridController extends Group {
     return {
       offsetX: this.offsetX,
       offsetY: this.offsetY,
+      velocityX: this.velocityX,
+      velocityY: this.velocityY,
+      pressed: this.pressed,
       dragging: this.dragging,
       tilePoolSize: this.tiles.length,
       filteredCount: this.filteredIndices.length,

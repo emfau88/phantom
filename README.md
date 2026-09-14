@@ -81,6 +81,7 @@ npm run lint            # ESLint
 npm run test            # unit tests
 npm run test:e2e        # desktop/mobile Playwright suite
 npm run qa:performance  # local headless frame-interval diagnostic
+npm run qa:motion-baseline # capture current grid and case-study motion references
 npm run build           # typecheck + production build
 npm run preview         # serve dist locally
 ```
@@ -98,6 +99,7 @@ dispatching it, performs the deployment; creating the workflow locally does not.
 - Audit and implementation status: `docs/v16-audit.md` and
   `docs/parity-checklist.md`.
 - Visual comparison: `docs/qa/visual-parity.md`.
+- Motion-upgrade baseline: `docs/qa/motion-baseline/README.md`.
 - Performance notes: `docs/qa/performance.md`.
 - Media provenance decision: `docs/asset-manifest.md`.
 - Baseline and production captures: `docs/qa/v16-baseline/` and
