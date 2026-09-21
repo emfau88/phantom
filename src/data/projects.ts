@@ -17,6 +17,8 @@ export interface Project {
   media: string[];
 }
 
+const projectAsset = (file: string) => `${import.meta.env.BASE_URL}assets/projects/${file}`;
+
 export const projects: Project[] = [
   {
     id: 'hexfront', title: 'HEXFRONT', category: 'GAME', year: 2026,
@@ -25,7 +27,7 @@ export const projects: Project[] = [
     art: 'tide', premium: 'hexfront',
     liveUrl: 'https://emfau88.github.io/hexwars/', repositoryUrl: 'https://github.com/emfau88/hexwars',
     media: [
-      '/assets/projects/hexfront-title.png',
+      projectAsset('hexfront-title.png'),
       'https://raw.githubusercontent.com/emfau88/hexwars/main/docs/portal/kongregate/02-level-06-divided-field.png',
       'https://raw.githubusercontent.com/emfau88/hexwars/main/docs/portal/kongregate/01-campaign-map.png',
       'https://raw.githubusercontent.com/emfau88/hexwars/main/docs/portal/kongregate/03-level-09-mirror.png',
@@ -123,8 +125,8 @@ export const projects: Project[] = [
     art: 'void', premium: 'strategy', liveUrl: 'https://emfau88.github.io/strategy-galalaxy/',
     repositoryUrl: 'https://github.com/emfau88/strategy-galalaxy',
     media: [
-      '/assets/projects/strategy-galalaxy-title.jpg',
-      '/assets/projects/strategy-galalaxy-match.jpg',
+      projectAsset('strategy-galalaxy-title.jpg'),
+      projectAsset('strategy-galalaxy-match.jpg'),
       'https://raw.githubusercontent.com/emfau88/strategy-galalaxy/main/assets/runtime/environment/orbital-garden-player-sector-v1.png',
       'https://raw.githubusercontent.com/emfau88/strategy-galalaxy/main/assets/runtime/environment/orbital-garden-rival-v1.png',
       'https://raw.githubusercontent.com/emfau88/strategy-galalaxy/main/assets/runtime/structures/command-hq-garden-player-v1.png',
@@ -186,8 +188,8 @@ export const projects: Project[] = [
     art: 'system', premium: 'core', liveUrl: 'https://emfau88.github.io/CTF-3.0/',
     repositoryUrl: 'https://github.com/emfau88/CTF-3.0',
     media: [
-      '/assets/projects/core-arena-title.png',
-      '/assets/projects/core-arena-match.jpg',
+      projectAsset('core-arena-title.png'),
+      projectAsset('core-arena-match.jpg'),
       'https://raw.githubusercontent.com/emfau88/CTF-3.0/main/docs/screenshots/menu-refresh-2026-08-24-v2/custom-match-arena-desktop-de.png',
       'https://raw.githubusercontent.com/emfau88/CTF-3.0/main/docs/screenshots/menu-refresh-2026-08-24-v2/main-menu-desktop-de.png',
       'https://raw.githubusercontent.com/emfau88/CTF-3.0/main/docs/screenshots/menu-refresh-2026-08-24-v2/league-hq-desktop-de.png',
@@ -200,7 +202,7 @@ export const projects: Project[] = [
     art: 'signal', premium: 'wombat', liveUrl: 'https://emfau88.github.io/MoreThanWombat/',
     repositoryUrl: 'https://github.com/emfau88/MoreThanWombat',
     media: [
-      '/assets/projects/more-than-wombat-title.jpg',
+      projectAsset('more-than-wombat-title.jpg'),
       'https://raw.githubusercontent.com/emfau88/MoreThanWombat/master/public/assets/1.png',
       'https://raw.githubusercontent.com/emfau88/MoreThanWombat/master/public/assets/2.png',
     ],
@@ -250,7 +252,7 @@ export const projects: Project[] = [
     art: 'editorial', premium: 'portfolio', liveUrl: 'https://emfau88.github.io/Portfolio3/',
     repositoryUrl: 'https://github.com/emfau88/Portfolio3',
     media: [
-      '/assets/projects/portfolio3-title.jpg',
+      projectAsset('portfolio3-title.jpg'),
       'https://raw.githubusercontent.com/emfau88/Portfolio3/main/emfau_logo_v6_original_pixels_bounce.gif',
     ],
   },
