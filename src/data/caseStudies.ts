@@ -37,8 +37,8 @@ export const caseStudies = {
     designTitle: 'Designed for decisions, not interface friction.',
     designBody: 'The interface keeps the battlefield primary. Input, feedback and progression are structured around fast comprehension on desktop and mobile, while deterministic levels make the complete campaign testable and repeatable.',
     closing: 'Play the', closingAccent: 'current build.', accent: '#9eb8d5',
-    mediaAlts: ['HEXFRONT battle on Split Field', 'HEXFRONT campaign atlas', 'HEXFRONT battle on Three Passes'],
-    mediaCaptions: ['Split Field / live pressure', 'Campaign atlas / mission progression', 'Three Passes / constrained routes'],
+    mediaAlts: ['HEXFRONT battle on Two Passes', 'HEXFRONT battle on Split Field', 'HEXFRONT campaign atlas', 'HEXFRONT battle on Three Passes'],
+    mediaCaptions: ['Two Passes / live pressure', 'Split Field / live pressure', 'Campaign atlas / mission progression', 'Three Passes / constrained routes'],
   },
   mirror: {
     eyebrow: 'Relationship clarity / Android app / 2026',
@@ -174,8 +174,8 @@ export const caseStudies = {
     designTitle: 'Strategy stays readable when decisions produce visible travel.',
     designBody: 'Hangar traversal, formations, the strategic map strip and offscreen feedback connect an abstract purchase to its physical arrival at the front. Performance budgets cap fleets and projectiles before density overwhelms mobile hardware.',
     closing: 'Change the', closingAccent: 'front.', accent: '#70d4d2',
-    mediaAlts: ['Strategy Galalaxy orbital battlefield', 'Strategy Galalaxy rival sector', 'Strategy Galalaxy fleet structures'],
-    mediaCaptions: ['Orbital Garden / player sector', 'Live rival pressure', 'Fleet identity / command layer'],
+    mediaAlts: ['Strategy Galalaxy live command view', 'Strategy Galalaxy live fleet front', 'Strategy Galalaxy orbital battlefield', 'Strategy Galalaxy rival sector', 'Strategy Galalaxy fleet structures'],
+    mediaCaptions: ['Live deploy / upgrade choice', 'Live front / fleet pressure', 'Orbital Garden / player sector', 'Live rival pressure', 'Fleet identity / command layer'],
   },
   chargegeist: {
     eyebrow: 'Ghost collection / turn-based mobile game / 2026',
@@ -259,8 +259,8 @@ export const caseStudies = {
     designTitle: 'Readable at a glance, difficult to master.',
     designBody: 'A framework-neutral gameplay core separates simulation from Phaser, input and audio adapters. The same discipline supports asymmetric bot teams, objective modes, responsive menus and reproducible premium-map audits.',
     closing: 'Enter the', closingAccent: 'arena.', accent: '#67d1e8',
-    mediaAlts: ['Core Arena custom match selection', 'Core Arena main menu', 'Core Arena League HQ'],
-    mediaCaptions: ['Custom Match / premium arenas', 'Arena Twilight / main menu', 'League HQ / Proving Circuit'],
+    mediaAlts: ['Core Arena live CTF match', 'Core Arena live objective pressure', 'Core Arena custom match selection', 'Core Arena main menu', 'Core Arena League HQ'],
+    mediaCaptions: ['Classic CTF / live match', 'Objective pressure / match view', 'Custom Match / premium arenas', 'Arena Twilight / main menu', 'League HQ / Proving Circuit'],
   },
   'more-than-wombat': {
     eyebrow: '2.5D arcade brawler / browser game / 2026',
@@ -276,8 +276,8 @@ export const caseStudies = {
     designTitle: 'A short stage still needs a complete dramatic arc.',
     designBody: 'Combat, travel and transitions build toward the Overtime Supervisor instead of repeating static waves. The vertical slice is honest about ongoing real-device and balance work while already proving the full run structure.',
     closing: 'Start the', closingAccent: 'junkyard run.', accent: '#e57972',
-    mediaAlts: ['More Than Wombat comic brawler', 'More Than Wombat combat scene'],
-    mediaCaptions: ['Junkyard Run / cast', '2.5D arcade combat'],
+    mediaAlts: ['More Than Wombat Junkyard Run', 'More Than Wombat comic brawler', 'More Than Wombat combat scene'],
+    mediaCaptions: ['Junkyard Run / live combat', 'Junkyard Run / cast', '2.5D arcade combat'],
   },
   'cozy-bunker': {
     eyebrow: 'Pixel management prototype / browser game / 2026',
@@ -361,10 +361,9 @@ export const caseStudies = {
     designTitle: 'A portfolio can show both outcomes and the discipline behind them.',
     designBody: 'The page balances product promotion with honest archive status and development context. Its reusable carousels, cards and chronology established the content model that the spatial portfolio now presents more experientially.',
     closing: 'Visit the', closingAccent: 'previous archive.', accent: '#9c8be8',
-    mediaAlts: ['Animated EMFAU identity from Portfolio3'],
-    mediaCaptions: ['EMFAU / previous portfolio system'],
+    mediaAlts: ['Portfolio3 app catalogue overview', 'Animated EMFAU identity from Portfolio3'],
+    mediaCaptions: ['Portfolio3 / Android app catalogue', 'EMFAU / previous portfolio system'],
     imagePosition: 'center',
-    imageFit: 'contain',
   },
 } satisfies Record<string, CaseStudyContent>;
 
