@@ -27,7 +27,7 @@ export const projects: Project[] = [
     art: 'tide', premium: 'hexfront',
     liveUrl: 'https://emfau88.github.io/hexwars/', repositoryUrl: 'https://github.com/emfau88/hexwars',
     media: [
-      projectAsset('hexfront-title.png'),
+      projectAsset('hexfront-title.webp'),
       'https://raw.githubusercontent.com/emfau88/hexwars/main/docs/portal/kongregate/02-level-06-divided-field.png',
       'https://raw.githubusercontent.com/emfau88/hexwars/main/docs/portal/kongregate/01-campaign-map.png',
       'https://raw.githubusercontent.com/emfau88/hexwars/main/docs/portal/kongregate/03-level-09-mirror.png',
@@ -125,8 +125,8 @@ export const projects: Project[] = [
     art: 'void', premium: 'strategy', liveUrl: 'https://emfau88.github.io/strategy-galalaxy/',
     repositoryUrl: 'https://github.com/emfau88/strategy-galalaxy',
     media: [
-      projectAsset('strategy-galalaxy-title.jpg'),
-      projectAsset('strategy-galalaxy-match.jpg'),
+      projectAsset('strategy-galalaxy-title.webp'),
+      projectAsset('strategy-galalaxy-match.webp'),
       'https://raw.githubusercontent.com/emfau88/strategy-galalaxy/main/assets/runtime/environment/orbital-garden-player-sector-v1.png',
       'https://raw.githubusercontent.com/emfau88/strategy-galalaxy/main/assets/runtime/environment/orbital-garden-rival-v1.png',
       'https://raw.githubusercontent.com/emfau88/strategy-galalaxy/main/assets/runtime/structures/command-hq-garden-player-v1.png',
@@ -188,8 +188,8 @@ export const projects: Project[] = [
     art: 'system', premium: 'core', liveUrl: 'https://emfau88.github.io/CTF-3.0/',
     repositoryUrl: 'https://github.com/emfau88/CTF-3.0',
     media: [
-      projectAsset('core-arena-title.png'),
-      projectAsset('core-arena-match.jpg'),
+      projectAsset('core-arena-title.webp'),
+      projectAsset('core-arena-match.webp'),
       'https://raw.githubusercontent.com/emfau88/CTF-3.0/main/docs/screenshots/menu-refresh-2026-08-24-v2/custom-match-arena-desktop-de.png',
       'https://raw.githubusercontent.com/emfau88/CTF-3.0/main/docs/screenshots/menu-refresh-2026-08-24-v2/main-menu-desktop-de.png',
       'https://raw.githubusercontent.com/emfau88/CTF-3.0/main/docs/screenshots/menu-refresh-2026-08-24-v2/league-hq-desktop-de.png',
@@ -252,7 +252,7 @@ export const projects: Project[] = [
     art: 'editorial', premium: 'portfolio', liveUrl: 'https://emfau88.github.io/Portfolio3/',
     repositoryUrl: 'https://github.com/emfau88/Portfolio3',
     media: [
-      projectAsset('portfolio3-title.jpg'),
+      projectAsset('portfolio3-title.webp'),
       'https://raw.githubusercontent.com/emfau88/Portfolio3/main/emfau_logo_v6_original_pixels_bounce.gif',
     ],
   },
