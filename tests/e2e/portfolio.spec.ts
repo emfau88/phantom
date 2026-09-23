@@ -226,12 +226,14 @@ test('spatial media gallery supports controls, keyboard and pointer drag', async
   const slides = gallery.locator('.media-gallery-slide');
   await expect(slides).toHaveCount(3);
   await expect(gallery.locator('header')).toContainText('01 — 03');
+  await expect(slides.nth(2).locator('img')).not.toHaveAttribute('src');
   await gallery.getByRole('button', { name: 'Next media' }).click();
   await expect(slides.nth(1)).toHaveAttribute('aria-current', 'true');
   const viewport = gallery.locator('.media-gallery-viewport');
   await viewport.focus();
   await page.keyboard.press('End');
   await expect(slides.nth(2)).toHaveAttribute('aria-current', 'true');
+  await expect(slides.nth(2).locator('img')).toHaveAttribute('src', /.+/);
   await page.keyboard.press('Home');
   await expect(slides.nth(0)).toHaveAttribute('aria-current', 'true');
   if (testInfo.project.name !== 'desktop') return;

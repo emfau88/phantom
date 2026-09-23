@@ -33,6 +33,17 @@ export function MediaGallery({ items, label, reducedMotion }: MediaGalleryProps)
   });
   const activeIndexRef = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [requestedIndices, setRequestedIndices] = useState<Set<number>>(() => new Set([0, 1]));
+
+  const requestAround = useCallback((index: number) => {
+    setRequestedIndices((previous) => {
+      const next = new Set(previous);
+      for (let nearby = Math.max(0, index - 1); nearby <= Math.min(items.length - 1, index + 1); nearby += 1) {
+        next.add(nearby);
+      }
+      return next.size === previous.size ? previous : next;
+    });
+  }, [items.length]);
 
   const syncVisuals = useCallback((nextX: number, velocity = 0) => {
     const track = trackRef.current;
@@ -44,6 +55,7 @@ export function MediaGallery({ items, label, reducedMotion }: MediaGalleryProps)
     if (nextIndex !== activeIndexRef.current) {
       activeIndexRef.current = nextIndex;
       setActiveIndex(nextIndex);
+      requestAround(nextIndex);
     }
     const velocityTilt = reducedMotion ? 0 : clamp(velocity * 0.12, -0.7, 0.7);
     Array.from(track.children).forEach((child, index) => {
@@ -53,7 +65,7 @@ export function MediaGallery({ items, label, reducedMotion }: MediaGalleryProps)
       child.style.setProperty('--gallery-opacity', String(1 - distance * 0.3));
       child.style.setProperty('--gallery-tilt', `${velocityTilt * (index < position ? -1 : 1)}deg`);
     });
-  }, [items.length, reducedMotion]);
+  }, [items.length, reducedMotion, requestAround]);
 
   const snapTo = useCallback((index: number, velocity = 0) => {
     if (wheelTimerRef.current !== null) {
@@ -61,6 +73,7 @@ export function MediaGallery({ items, label, reducedMotion }: MediaGalleryProps)
       wheelTimerRef.current = null;
     }
     const safeIndex = clamp(index, 0, Math.max(0, items.length - 1));
+    requestAround(safeIndex);
     const target = -safeIndex * stepRef.current;
     tweenRef.current?.kill();
     if (reducedMotion) {
@@ -79,7 +92,7 @@ export function MediaGallery({ items, label, reducedMotion }: MediaGalleryProps)
         syncVisuals(target);
       },
     });
-  }, [items.length, reducedMotion, syncVisuals]);
+  }, [items.length, reducedMotion, requestAround, syncVisuals]);
 
   const measure = useCallback(() => {
     const track = trackRef.current;
@@ -196,7 +209,7 @@ export function MediaGallery({ items, label, reducedMotion }: MediaGalleryProps)
         <div ref={trackRef} className="media-gallery-track">
           {items.map((item, index) => (
             <figure className="media-gallery-slide" key={`${item.src}-${index}`} aria-label={`${index + 1} of ${items.length}`} aria-current={index === activeIndex ? 'true' : undefined}>
-              <div><img src={item.src} alt={item.alt} draggable={false} /></div>
+              <div><img src={requestedIndices.has(index) ? item.src : undefined} alt={item.alt} loading={index < 2 ? 'lazy' : 'eager'} decoding="async" draggable={false} /></div>
               <figcaption><span>{item.caption}</span><span>{String(index + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</span></figcaption>
             </figure>
           ))}
