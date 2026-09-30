@@ -67,8 +67,8 @@ Do not:
 - rewrite Git history
 - force-push
 - push, publish or deploy unless explicitly requested
-- copy Phantom production bundles, code, proprietary assets, imagery, fonts or
-  branding
+- copy third-party production bundles, code, proprietary assets, imagery, fonts
+  or branding
 - fabricate project facts, links, contact details or case-study content
 
 Copying portfolio preview assets into this repository is allowed only when the
@@ -98,15 +98,10 @@ Source priority:
 2. Rendered V16 at the required viewport sizes.
 3. `index2.html` only as secondary context.
 4. This brief for the production target and constraints.
-5. Phantom references for interaction philosophy, not source code.
+5. Independently researched interaction patterns, never third-party source code.
 
-Primary experiential reference: <https://www.phantom.land/>
-
-Published technical reference:
-<https://tympanus.net/codrops/2025/06/30/invisible-forces-the-making-of-phantom-lands-interactive-grid-and-3d-face-particle-system/>
-
-This is a clean-room implementation. Study the public behavior and concepts,
-then implement them independently for EMFAU.
+This is a clean-room implementation. Implement the interaction behavior
+independently for EMFAU.
 
 ## 5. Required audit artifacts
 
@@ -425,8 +420,8 @@ direction. It should be felt more than noticed.
 
 Estimate release velocity from recent pointer samples, continue movement on
 release and decay it smoothly. Reuse mutable vectors and avoid per-frame
-allocations. Phantom's public interpolation constants may inform tuning, but
-match V16/desired feel rather than copying constants mechanically.
+allocations. Tune the interpolation to match V16 and the desired feel rather
+than copying external constants mechanically.
 
 ### Drag camera response
 

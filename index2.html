@@ -422,8 +422,8 @@ function initGL(){
  const vs=compile(gl.VERTEX_SHADER,`attribute vec2 aPosition;varying vec2 vUv;void main(){vUv=aPosition*.5+.5;gl_Position=vec4(aPosition,0.,1.);}`);
  const fs=compile(gl.FRAGMENT_SHADER,`precision highp float;varying vec2 vUv;uniform sampler2D uTex;uniform float uDistort;uniform float uZoom;uniform float uVignette;void main(){
    vec2 p=2.0*(vUv-.5);
-   /* Phantom's published shader uses a sub-1 base scale plus a radial term.
-      For the concave / recessed-wall direction visible on the live site,
+   /* The warp uses a sub-1 base scale plus a radial term.
+      For the concave / recessed-wall direction of this prototype,
       the radial coefficient must decrease the sample scale toward the edges. */
    vec2 metric=p*vec2(.78,1.0);
    float r2=dot(metric,metric);
@@ -464,7 +464,7 @@ function screenToSource(px,py){
  const su=x*.5+.5,sv=y*.5+.5;return{x:su*W,y:(1-sv)*H};
 }
 function gridMetrics(){
- /* Calibrated from the supplied Phantom viewport: around six columns and
+ /* Calibrated viewport target: around six columns and
     three rows remain visible after the radial magnification. */
  const cellW=clamp(W*.154,192,272);
  const cellH=clamp(H*.305,220,292);
@@ -524,7 +524,7 @@ function draw(t){
    const inside=!dragging&&sp.x>=cellX&&sp.x<=cellX+m.cellW&&sp.y>=cellY&&sp.y<=cellY+m.cellH;
    const focusKey=`${col}:${row}`;let focus=cellFocus.get(focusKey)||0;focus=lerp(focus,inside?1:0,inside?.22:.105);if(focus>.002)cellFocus.set(focusKey,focus);else cellFocus.delete(focusKey);if(inside)hover={index,x:cellX,y:cellY,w:m.cellW,h:m.cellH};
 
-   // Phantom-like local illumination: the cell itself lifts out of a nearly black plane.
+   // Local illumination: the cell itself lifts out of a nearly black plane.
    if(focus>.002){ctx.save();ctx.beginPath();ctx.rect(cellX,cellY,m.cellW,m.cellH);ctx.clip();
      ctx.fillStyle=`rgba(255,255,255,${.025+.075*focus})`;ctx.fillRect(cellX,cellY,m.cellW,m.cellH);
      const tileGlow=ctx.createRadialGradient(sp.x,sp.y,0,sp.x,sp.y,Math.max(m.cellW,m.cellH)*.82);tileGlow.addColorStop(0,`rgba(255,255,255,${.13*focus})`);tileGlow.addColorStop(.48,`rgba(255,255,255,${.055*focus})`);tileGlow.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=tileGlow;ctx.fillRect(cellX,cellY,m.cellW,m.cellH);ctx.restore();}

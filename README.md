@@ -95,6 +95,15 @@ dispatching it, performs the deployment; creating the workflow locally does not.
 
 ## Evidence and legacy
 
+Third-party software notices are maintained in
+[`public/THIRD_PARTY_NOTICES.txt`](public/THIRD_PARTY_NOTICES.txt). Vite copies this
+file to the root of `dist/`, so every deployment includes it at
+`THIRD_PARTY_NOTICES.txt` beneath the site's base URL. Keep this file with the
+distributed website and refresh the package versions and license texts when
+runtime dependencies change. The notices cover the packages present in the
+production bundle, including the React Reconciler code bundled by React Three
+Fiber. GSAP retains its own license notice and official terms URL.
+
 - V16 is preserved at `legacy/v16-single-file.html` and excluded from the bundle.
 - Audit and implementation status: `docs/v16-audit.md` and
   `docs/parity-checklist.md`.
