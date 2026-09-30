@@ -3,6 +3,11 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
+  // Each page runs the grid and brand WebGL renderers. Sharing a CI runner
+  // between workers stalls software-rendered frames and viewport resizing.
+  workers: process.env.CI ? 1 : undefined,
+  timeout: process.env.CI ? 60_000 : 30_000,
+  expect: { timeout: process.env.CI ? 15_000 : 5_000 },
   retries: process.env.CI ? 2 : 0,
   reporter: 'list',
   use: {
