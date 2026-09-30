@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
-await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+await page.goto(process.env.QA_URL || 'http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
 await page.waitForFunction(() => Boolean(window.__EMFAU_GRID__));
 await page.waitForTimeout(1800);
 
@@ -46,7 +46,7 @@ const drag = await dragSample;
 await page.waitForTimeout(1000);
 interaction.settled = await page.evaluate(() => window.__EMFAU_GRID__?.state());
 const runtime = await page.evaluate(() => {
-  const canvasElement = document.querySelector('canvas');
+  const canvasElement = document.querySelector('.grid-canvas canvas');
   const state = window.__EMFAU_GRID__?.state();
   return {
     userAgent: navigator.userAgent,

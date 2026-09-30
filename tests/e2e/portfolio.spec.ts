@@ -1,5 +1,38 @@
 import { expect, test } from '@playwright/test';
 
+test('grouped identity and independent navigation fit the viewport', async ({ page }, testInfo) => {
+  await page.goto('/');
+  const viewport = page.viewportSize()!;
+  const identity = await page.locator('.header-identity').boundingBox();
+  const contact = await page.getByRole('button', { name: 'Projekt anfragen' }).boundingBox();
+  const navigation = await page.getByRole('navigation', { name: 'Primary navigation' }).boundingBox();
+  expect(identity).not.toBeNull();
+  expect(contact).not.toBeNull();
+  expect(navigation).not.toBeNull();
+  expect(identity!.x + identity!.width).toBeLessThan(contact!.x);
+  expect(contact!.x + contact!.width).toBeLessThanOrEqual(viewport.width);
+  await expect(page.locator('.top-center')).toHaveCount(0);
+  const radius = await page.locator('.talk-btn').evaluate((element) => getComputedStyle(element).borderRadius);
+  expect(radius).toBe('9px');
+  if (testInfo.project.name === 'desktop') {
+    expect(navigation!.x).toBeLessThan(40);
+    expect(navigation!.height).toBeGreaterThan(navigation!.width);
+  } else {
+    expect(navigation!.y).toBeGreaterThan(viewport.height - 100);
+    expect(navigation!.width).toBeGreaterThan(navigation!.height);
+    for (const width of [320, 390, 760]) {
+      await page.setViewportSize({ width, height: 844 });
+      const brand = await page.locator('.header-identity').boundingBox();
+      const action = await page.locator('.talk-btn').boundingBox();
+      const nav = await page.locator('.site-nav').boundingBox();
+      const counter = await page.getByRole('button', { name: 'Browse all projects' }).boundingBox();
+      expect(brand!.x + brand!.width).toBeLessThan(action!.x);
+      expect(counter!.y + counter!.height).toBeLessThan(nav!.y);
+      expect(nav!.x + nav!.width).toBeLessThanOrEqual(width);
+    }
+  }
+});
+
 test('loads the production grid and exposes all filters', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -98,9 +131,10 @@ test('curved-edge picking follows the visible tile', async ({ page }) => {
   await expect.poll(() => page.evaluate(() => Boolean(window.__EMFAU_GRID__))).toBe(true);
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
-  await page.mouse.move(box!.x + 82, box!.y + box!.height * 0.56);
+  // Keep the curved-edge sample below the desktop navigation rail.
+  await page.mouse.move(box!.x + 82, box!.y + box!.height * 0.62);
   await expect(page.locator('.interaction-hint')).not.toContainText('Drag anywhere');
-  await page.mouse.click(box!.x + 82, box!.y + box!.height * 0.56);
+  await page.mouse.click(box!.x + 82, box!.y + box!.height * 0.62);
   await expect(page).toHaveURL(/#project\/[a-z0-9-]+/);
   await expect(page.getByRole('dialog')).toBeVisible({ timeout: 4000 });
 });
@@ -142,7 +176,7 @@ test('About, Contact and accessible project browser are keyboard reachable', asy
   await page.getByRole('button', { name: 'About' }).click();
   await expect(page.getByRole('heading', { name: 'Independent by design.' })).toBeVisible();
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: "Let's talk" }).click();
+  await page.getByRole('button', { name: 'Projekt anfragen' }).click();
   await expect(page.getByRole('heading', { name: 'Build something worth noticing.' })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Browse projects' }).focus();

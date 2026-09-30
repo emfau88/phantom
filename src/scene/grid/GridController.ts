@@ -9,11 +9,13 @@ import {
 import type { Project, ProjectFilter } from '../../data/projects';
 import { projectsForFilter } from '../../data/projects';
 import { screenToSource, warpedRect, type ScreenRect } from './distortion';
-import { createProjectTileTexture, type ProjectTileTexture } from './tileTexture';
+import { createProjectTileTexture, tileHoverBounds, tileMediaBounds, type ProjectTileTexture } from './tileTexture';
 import { createGridMotionState, type GridMotionController } from './motionState';
+import { tileTypography } from './tileTypography';
 
 interface TileUniforms extends Record<string, { value: unknown }> {
   uMap: { value: Texture };
+  uCaption: { value: Texture };
   uHover: { value: number };
   uOpacity: { value: number };
   uPointer: { value: Vector2 };
@@ -53,14 +55,15 @@ const vertexShader = /* glsl */ `
 
 const fragmentShader = /* glsl */ `
   uniform sampler2D uMap;
+  uniform sampler2D uCaption;
   uniform float uHover;
   uniform float uOpacity;
   uniform vec2 uPointer;
   varying vec2 vUv;
 
   void main() {
-    vec2 mediaMin = vec2(0.03, 0.12);
-    vec2 mediaMax = vec2(0.97, 0.876);
+    vec2 mediaMin = vec2(${tileHoverBounds.minX.toFixed(6)}, ${tileHoverBounds.minY.toFixed(6)});
+    vec2 mediaMax = vec2(${tileHoverBounds.maxX.toFixed(6)}, ${tileHoverBounds.maxY.toFixed(6)});
     float mediaMask = step(mediaMin.x, vUv.x) * step(vUv.x, mediaMax.x)
       * step(mediaMin.y, vUv.y) * step(vUv.y, mediaMax.y);
     vec2 mediaCenter = (mediaMin + mediaMax) * 0.5;
@@ -71,11 +74,16 @@ const fragmentShader = /* glsl */ `
     float luminance = dot(sampleColor.rgb, vec3(0.2126, 0.7152, 0.0722));
     float saturation = 0.88 + uHover * 0.16;
     vec3 color = mix(vec3(luminance), sampleColor.rgb, saturation);
-    color *= 0.77 + uHover * 0.255;
+    // Labels retain their contrast; only the artwork receives hover dimming.
+    color *= mix(1.0, 0.77 + uHover * 0.255, mediaMask);
     float glow = smoothstep(0.58, 0.0, distance(vUv, uPointer)) * mediaMask;
     color += vec3(0.045 * glow * uHover);
     float edge = 1.0 - smoothstep(0.36, 0.72, distance(vUv, vec2(0.5)));
     color += vec3(0.012 * edge * uHover);
+    if (vUv.y <= ${(tileTypography.captionHeight / 900).toFixed(6)}) {
+      vec4 caption = texture2D(uCaption, vec2(vUv.x, vUv.y / ${(tileTypography.captionHeight / 900).toFixed(6)}));
+      color = mix(color, caption.rgb, caption.a);
+    }
     gl_FragColor = vec4(color, sampleColor.a * uOpacity);
   }
 `;
@@ -95,9 +103,10 @@ function damp(current: number, target: number, lambda: number, delta: number): n
   return target + (current - target) * Math.exp(-lambda * delta);
 }
 
-function createMaterial(texture: Texture): { material: ShaderMaterial; uniforms: TileUniforms } {
+function createMaterial(tile: ProjectTileTexture): { material: ShaderMaterial; uniforms: TileUniforms } {
   const uniforms: TileUniforms = {
-    uMap: { value: texture },
+    uMap: { value: tile.texture },
+    uCaption: { value: tile.caption },
     uHover: { value: 0 },
     uOpacity: { value: 1 },
     uPointer: { value: new Vector2(0.5, 0.5) },
@@ -150,15 +159,15 @@ export class GridController extends Group implements GridMotionController {
   private filterOpacity = 1;
   private disposed = false;
 
-  constructor(projects: Project[], callbacks: GridCallbacks) {
+  constructor(projects: Project[], callbacks: GridCallbacks, availableAnisotropy = 1) {
     super();
     this.projects = projects;
     this.callbacks = callbacks;
     this.filteredIndices = projects.map((_, index) => index);
-    this.tileTextures = projects.map(createProjectTileTexture);
+    this.tileTextures = projects.map((project, index) => createProjectTileTexture(project, index, availableAnisotropy));
 
     for (let index = 0; index < POOL_COLUMNS * POOL_ROWS; index += 1) {
-      const { material, uniforms } = createMaterial(this.tileTextures[0].texture);
+      const { material, uniforms } = createMaterial(this.tileTextures[0]);
       const mesh = new Mesh(this.geometry, material);
       mesh.frustumCulled = false;
       this.tiles.push({ mesh, uniforms, projectIndex: -1, col: 0, row: 0 });
@@ -328,6 +337,7 @@ export class GridController extends Group implements GridMotionController {
         if (tile.projectIndex !== projectIndex) {
           tile.projectIndex = projectIndex;
           tile.uniforms.uMap.value = this.tileTextures[projectIndex].texture;
+          tile.uniforms.uCaption.value = this.tileTextures[projectIndex].caption;
         }
         if (tile.mesh.visible) this.tileTextures[projectIndex].ensureMedia();
 
@@ -405,10 +415,10 @@ export class GridController extends Group implements GridMotionController {
     const cellLeft = this.width / 2 + hit.col * this.cellWidth - (this.offsetX + ambientX) - this.cellWidth / 2;
     const cellTop = this.height / 2 + hit.row * this.cellHeight - (this.offsetY + ambientY) - this.cellHeight / 2;
     const mediaRect = {
-      x: cellLeft + this.cellWidth * 0.03,
-      y: cellTop + this.cellHeight * 0.124,
-      width: this.cellWidth * 0.94,
-      height: this.cellHeight * 0.755,
+      x: cellLeft + this.cellWidth * tileMediaBounds.x,
+      y: cellTop + this.cellHeight * tileMediaBounds.y,
+      width: this.cellWidth * tileMediaBounds.width,
+      height: this.cellHeight * tileMediaBounds.height,
     };
     return {
       project: this.projects[hit.projectIndex],

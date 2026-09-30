@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import type { ProjectFilter } from '../data/projects';
 import { filterLabels, projectsForFilter } from '../data/projects';
 import { Brand } from './Brand';
@@ -19,18 +18,6 @@ interface Props {
 
 const filters: ProjectFilter[] = ['ALL', 'GAME', 'APP', 'WEB'];
 
-function BerlinClock() {
-  const format = () => new Intl.DateTimeFormat('de-DE', {
-    timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', hour12: false,
-  }).format(new Date());
-  const [time, setTime] = useState(format);
-  useEffect(() => {
-    const interval = window.setInterval(() => setTime(format()), 30_000);
-    return () => window.clearInterval(interval);
-  }, []);
-  return <b>{time}</b>;
-}
-
 export function Chrome(props: Props) {
   const total = projectsForFilter(props.filter).length;
   return (
@@ -38,25 +25,23 @@ export function Chrome(props: Props) {
       <button className="browse-skip" type="button" onClick={props.onBrowseProjects}>Browse projects</button>
       <header className={`chrome ${props.hidden ? 'is-hidden' : ''}`}>
         <div className="top">
-          <Brand />
-          <div className="top-center">
-            <p className="top-statement">EMFAU IS AN INDEPENDENT CREATIVE DEVELOPER BUILDING{' '}
-              <span>DISTINCTIVE WEBSITES, INTERACTIVE EXPERIENCES &amp; PLAYABLE WORLDS.</span>
-            </p>
+          <div className="header-identity">
+            <Brand active={!props.hidden} />
+            <p className="identity-copy"><span>Websites, Apps</span><span>&amp; Playable Worlds.</span></p>
           </div>
           <div className="top-right">
             <div className="header-meta">
-              <span>GERMANY, DE</span><BerlinClock />
-              <span><i className="status-dot" />AVAILABLE</span><button className="selected-work-trigger" type="button" onClick={props.onBrowseProjects}>SELECTED WORK</button>
+              <span><i className="status-dot" />AVAILABLE FOR PROJECTS</span>
+              <button className="selected-work-trigger" type="button" onClick={props.onBrowseProjects}>PROJECT INDEX ↗</button>
             </div>
-            <button className="talk-btn" type="button" onClick={() => props.onSectionChange('contact')}>Let's talk</button>
+            <button className="talk-btn" type="button" onClick={() => props.onSectionChange('contact')}>Projekt anfragen <span aria-hidden="true">↗</span></button>
           </div>
         </div>
       </header>
       <button className={`counter ${props.hidden ? 'is-hidden' : ''}`} type="button" onClick={props.onBrowseProjects} aria-label="Browse all projects" aria-live="polite">
         <b>{String(props.activeIndex + 1).padStart(2, '0')}</b><span> / {String(total).padStart(2, '0')}</span>
       </button>
-      <nav className={`dock ${props.hidden ? 'is-hidden' : ''}`} aria-label="Primary navigation">
+      <nav className={`site-nav ${props.hidden ? 'is-hidden' : ''}`} aria-label="Primary navigation">
         {(['work', 'about', 'contact'] as Section[]).map((item) => (
           <button key={item} type="button" className={props.section === item ? 'active' : ''}
             aria-current={props.section === item ? 'page' : undefined} onClick={() => props.onSectionChange(item)}>

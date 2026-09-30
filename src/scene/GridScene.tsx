@@ -6,6 +6,7 @@ import { projects } from '../data/projects';
 import { GridController, type GridCallbacks, type TileSelection } from './grid/GridController';
 import { PortfolioPostProcessing } from './postprocessing/PortfolioPostProcessing';
 import type { GridMotionController } from './grid/motionState';
+import { gridPixelRatio } from './renderQuality';
 
 interface GridSceneProps {
   active?: boolean;
@@ -49,7 +50,7 @@ function GridPrimitive({
     onHoverProject,
     onInteraction,
   }), [onActiveIndex, onHoverProject, onInteraction, onSelect]);
-  const controller = useMemo(() => new GridController(projects, callbacks), [callbacks]);
+  const controller = useMemo(() => new GridController(projects, callbacks, gl.capabilities.getMaxAnisotropy()), [callbacks, gl]);
 
   useEffect(() => {
     controller.connect(gl.domElement);
@@ -106,7 +107,7 @@ export function GridScene(props: GridSceneProps) {
       data-testid="grid-canvas"
       orthographic
       camera={{ position: [0, 0, 10], near: 0.1, far: 100, zoom: 1 }}
-      dpr={[1, 1.55]}
+      dpr={gridPixelRatio}
       gl={{ antialias: false, alpha: false, powerPreference: 'high-performance' }}
       onCreated={({ gl, scene }) => {
         gl.setClearColor(new Color('#000000'), 1);

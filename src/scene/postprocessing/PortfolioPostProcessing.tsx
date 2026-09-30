@@ -72,7 +72,7 @@ const distortionShader = {
 };
 
 export function PortfolioPostProcessing({ motionState, active = true }: Props) {
-  const { gl, scene, camera, size } = useThree();
+  const { gl, scene, camera, size, viewport } = useThree();
   const { composer, pass } = useMemo(() => {
     const nextComposer = new EffectComposer(gl);
     nextComposer.addPass(new RenderPass(scene, camera));
@@ -83,9 +83,10 @@ export function PortfolioPostProcessing({ motionState, active = true }: Props) {
   }, [camera, gl, scene]);
 
   useEffect(() => {
+    composer.setPixelRatio(viewport.dpr);
     composer.setSize(size.width, size.height);
     pass.uniforms.uResolution.value.set(size.width, size.height);
-  }, [composer, pass, size.height, size.width]);
+  }, [composer, pass, size.height, size.width, viewport.dpr]);
 
   useEffect(() => () => composer.dispose(), [composer]);
 
