@@ -29,12 +29,8 @@
 .header-identity{display:flex;align-items:center;gap:32px;min-width:0}
 .header-identity .brand-caption{display:none}
 .header-identity .brand-lockup{transform:none;flex-shrink:0}
-.brand-cube{position:relative;width:120px;height:91.2px;pointer-events:none}
-.brand-cube-mount,.brand-cube-fallback{position:absolute;inset:0;width:100%;height:100%}
-.brand-cube-mount canvas{display:block;width:100%;height:100%}
-.brand-cube-fallback{object-fit:contain;padding:13px}
-.brand-cube[data-ready=true] .brand-cube-fallback{visibility:hidden}
-.brand-cube[data-ready=false] .brand-cube-mount{visibility:hidden}
+.brand-mark{width:120px;height:91.2px;padding:13px;pointer-events:none}
+.brand-mark img{display:block;width:100%;height:100%;object-fit:contain}
 .identity-copy{margin:0;font-size:16px;font-weight:550;line-height:1.3;letter-spacing:-.02em;text-shadow:0 2px 16px #000}
 .identity-copy span{display:block}
 .identity-copy span:last-child{color:#c4c3bc}
@@ -58,7 +54,7 @@
   .chrome .top{align-items:start;gap:14px}
   .header-identity{flex-direction:column;align-items:flex-start;gap:10px}
   .header-identity .brand-lockup{transform:none}
-  .brand-cube{width:110.4px;height:84px}
+  .brand-mark{width:110.4px;height:84px}
   .header-identity .emfau-badge{transform:rotate(-2.4deg)}
   .identity-copy{font-size:11px;line-height:1.3}
   .chrome .header-meta{display:none}

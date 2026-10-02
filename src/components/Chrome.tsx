@@ -26,7 +26,7 @@ export function Chrome(props: Props) {
       <header className={`chrome ${props.hidden ? 'is-hidden' : ''}`}>
         <div className="top">
           <div className="header-identity">
-            <Brand active={!props.hidden} />
+            <Brand />
             <p className="identity-copy"><span>Websites, Apps</span><span>&amp; Playable Worlds.</span></p>
           </div>
           <div className="top-right">
